@@ -144,7 +144,7 @@ export const translations = {
   },
   ru: {
     appTitle: 'ВП Пересчёт',
-    appSubtitle: 'Фиксация излишков товаров',
+    appSubtitle: 'Фиксация проблемных товаров',
     warehouse: 'Склад',
     problemDept: 'Проблемный отдел',
     scannerMode: 'Сканирование',
@@ -204,7 +204,7 @@ export const translations = {
     
     // Item Scanning
     itemScanTitle: 'Сканируйте Товары в Короб',
-    itemScanSubtitle: 'Сканируйте штрихкод каждого излишка товара подряд',
+    itemScanSubtitle: 'Сканируйте штрихкод каждого проблемного товара подряд',
     itemInputPlaceholder: 'Сканируйте штрихкод товара...',
     scannedItemsList: 'Товары в этом коробе',
     totalItemsInBox: 'Всего товаров в коробе',
@@ -228,7 +228,7 @@ export const translations = {
     
     // Muammoli Otdel Dashboard
     deptDashboardTitle: 'Панель Проблемного Отдела',
-    deptDashboardSubtitle: 'Учёт всех коробов и находящихся в них излишков товаров',
+    deptDashboardSubtitle: 'Учёт всех коробов и находящихся в них проблемных товаров',
     searchPlaceholder: 'Поиск по номеру короба или штрихкоду товара...',
     filterAllShifts: 'Все смены',
     filterAllStatus: 'Все статусы',

@@ -126,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-400 font-bold leading-none mt-0.5 hidden sm:block">
-              Фиксация лишнего товара
+              Фиксация проблемных товаров
             </p>
           </div>
         </div>

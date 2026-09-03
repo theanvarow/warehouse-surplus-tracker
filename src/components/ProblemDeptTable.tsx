@@ -169,7 +169,7 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-indigo-400" />
-                <span>{language === 'uz' ? 'Qaysi PVZ dan ko\'proq (Bugun)' : 'Топ ПВЗ по излишкам (Сегодня)'}</span>
+                <span>{language === 'uz' ? 'Qaysi PVZ dan ko\'proq (Bugun)' : 'Топ ПВЗ по проблемным товарам (Сегодня)'}</span>
               </span>
               <span className="text-[11px] font-bold text-slate-500">{language === 'uz' ? 'Top 5' : 'Топ 5'}</span>
             </div>
