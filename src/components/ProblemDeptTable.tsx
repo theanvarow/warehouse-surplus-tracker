@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Language, ScannedItem } from '@/lib/types';
 import { soundManager } from '@/lib/sound';
 import {
@@ -8,7 +8,14 @@ import {
   Layers,
   MapPin,
   RotateCcw,
-  CheckCircle2
+  CheckCircle2,
+  Lock,
+  Unlock,
+  KeyRound,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  ArrowRight
 } from 'lucide-react';
 
 interface ProblemDeptTableProps {
@@ -24,6 +31,40 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
   items,
   onRefresh,
 }) => {
+  // Parol holati
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [passwordError, setPasswordError] = useState<string>('');
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isUnlocked) {
+      passwordInputRef.current?.focus();
+    }
+  }, [isUnlocked]);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = password.trim().toLowerCase();
+    // Parol: Sardor 12345 (yoki Sardor12345)
+    if (clean === 'sardor 12345' || clean === 'sardor12345') {
+      setIsUnlocked(true);
+      setPasswordError('');
+      soundManager.playBoxScanSound();
+    } else {
+      setPasswordError(language === 'uz' ? 'Noto\'g\'ri parol! Qayta urinib ko\'ring.' : 'Неверный пароль! Попробуйте снова.');
+      soundManager.playErrorSound();
+      passwordInputRef.current?.focus();
+    }
+  };
+
+  const handleLock = () => {
+    setIsUnlocked(false);
+    setPassword('');
+    setPasswordError('');
+    soundManager.playItemScanSound();
+  };
 
   // Bugungi sana (YYYY-MM-DD)
   const todayStr = useMemo(() => {
@@ -93,6 +134,75 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
     }
   };
 
+  // 🔒 AGAR PAROL KIRITILMAGAN BO'LSA — QULF OYNASI
+  if (!isUnlocked) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] py-8 px-4 animate-fade-in">
+        <div className="bg-[#1f2232] border border-[#2e3347] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
+          {/* Lock Icon Emblem */}
+          <div className="w-16 h-16 rounded-2xl bg-indigo-950/80 border border-indigo-700/80 mx-auto flex items-center justify-center text-indigo-400 shadow-lg shadow-indigo-600/20">
+            <Lock className="w-8 h-8 text-indigo-400" />
+          </div>
+
+          <div className="space-y-1.5">
+            <h2 className="text-xl sm:text-2xl font-black text-white">
+              {language === 'uz' ? 'Monitoring Bo\'limi' : 'Раздел Мониторинга'}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 font-medium">
+              {language === 'uz'
+                ? 'Ma\'lumotlarni ko\'rish uchun maxsus parolni kiriting'
+                : 'Введите пароль для доступа к просмотру аналитики'}
+            </p>
+          </div>
+
+          <form onSubmit={handlePasswordSubmit} className="space-y-4 text-left">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center space-x-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{language === 'uz' ? 'Maxfiy Parol' : 'Пароль доступа'}</span>
+              </label>
+              <div className="relative">
+                <input
+                  ref={passwordInputRef}
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError('');
+                  }}
+                  placeholder={language === 'uz' ? 'Parolni kiriting...' : 'Введите пароль...'}
+                  className="w-full pl-4 pr-11 py-3.5 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-2xl text-white placeholder-slate-500 text-base font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {passwordError && (
+              <p className="text-rose-400 text-xs font-bold animate-shake">
+                {passwordError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-3.5 px-6 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition-all cursor-pointer group"
+            >
+              <span>{language === 'uz' ? 'Kirish' : 'Войти'}</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 animate-fade-in text-slate-100">
       {/* 📊 BUGUNGI KUN ANALITIKASI PANELI */}
@@ -107,7 +217,7 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
             </h2>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
             {onRefresh && (
               <button
                 type="button"
@@ -117,11 +227,21 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-300 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
               >
                 <RotateCcw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
-                <span>{language === 'uz' ? 'Google Sheets bilan yangilash' : 'Обновить из таблицы'}</span>
+                <span>{language === 'uz' ? 'Yangilash' : 'Обновить'}</span>
               </button>
             )}
 
-            <span className="text-xs font-bold text-slate-400">
+            <button
+              type="button"
+              onClick={handleLock}
+              title={language === 'uz' ? 'Monitoringni qulflash' : 'Заблокировать мониторинг'}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-950/50 hover:bg-rose-900/80 border border-rose-800/80 text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>{language === 'uz' ? 'Qulflash' : 'Заблокировать'}</span>
+            </button>
+
+            <span className="text-xs font-bold text-slate-400 pl-1">
               {todayItems.length} {language === 'uz' ? 'ta qayd' : 'записей'}
             </span>
           </div>
