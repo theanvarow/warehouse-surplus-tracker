@@ -9,8 +9,9 @@ import {
   ShiftPeriod,
   UserSession,
 } from '@/lib/types';
-import { storageService } from '@/lib/storage';
+import { storageService, getNextShiftChangeTimestamp } from '@/lib/storage';
 import { syncItemsToGoogleSheets } from '@/lib/sheets';
+import { soundManager } from '@/lib/sound';
 import { Header } from '@/components/Header';
 import { AuthModal } from '@/components/AuthModal';
 import { ShiftSelector } from '@/components/ShiftSelector';
@@ -65,9 +66,29 @@ export default function Home() {
     // Google Sheets dan eng oxirgi ma'lumotlarni tortib olamiz
     refreshFromGoogleSheets();
 
-    // Har 25 soniyada yangilab turish
-    const interval = setInterval(refreshFromGoogleSheets, 25000);
-    return () => clearInterval(interval);
+    // Har 25 soniyada Google Sheets dan yangilab turish
+    const syncInterval = setInterval(refreshFromGoogleSheets, 25000);
+
+    // ⏰ Smena almashish vaqtlarini (Ertalab 09:00 va Kechki 21:00) har 5 soniyada tekshirib,
+    // vaqti kelishi bilan avtomatik ravishda xavfsizlik uchun hisobdan chiqarib yuborish
+    const shiftCheckInterval = setInterval(() => {
+      const validSession = storageService.getUserSession();
+      if (!validSession) {
+        setUserSession((prev) => {
+          if (prev !== null) {
+            console.log('⏰ Smena almashdi (09:00 / 21:00). Yangi xodim kirishi uchun tizimdan chiqildi.');
+            soundManager.playErrorSound();
+            return null;
+          }
+          return null;
+        });
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(syncInterval);
+      clearInterval(shiftCheckInterval);
+    };
   }, []);
 
   // Format current date and time
@@ -90,6 +111,7 @@ export default function Home() {
       shift: data.shift,
       shiftPeriod: 'day',
       loginTime: getFormattedTimestamp(),
+      expiresAt: getNextShiftChangeTimestamp(new Date()),
     };
     setUserSession(session);
     storageService.saveUserSession(session);

@@ -17,6 +17,31 @@ export const DEFAULT_SETTINGS: GoogleSheetSettings = {
   language: 'uz',
 };
 
+// Smena almashish vaqtlari (Ertalab 09:00 va Kechki 21:00) bo'yicha sessiya muddati
+export function getNextShiftChangeTimestamp(fromDate: Date = new Date()): number {
+  const d9 = new Date(fromDate);
+  d9.setHours(9, 0, 0, 0);
+
+  const d21 = new Date(fromDate);
+  d21.setHours(21, 0, 0, 0);
+
+  const nowMs = fromDate.getTime();
+
+  if (nowMs < d9.getTime()) {
+    // 09:00 gacha bo'lgan vaqt -> bugun 09:00 da tugaydi
+    return d9.getTime();
+  } else if (nowMs < d21.getTime()) {
+    // 09:00 dan 21:00 gacha bo'lgan vaqt -> bugun 21:00 da tugaydi
+    return d21.getTime();
+  } else {
+    // 21:00 dan keyingi vaqt -> ertaga ertalab 09:00 da tugaydi
+    const tomorrow9 = new Date(fromDate);
+    tomorrow9.setDate(tomorrow9.getDate() + 1);
+    tomorrow9.setHours(9, 0, 0, 0);
+    return tomorrow9.getTime();
+  }
+}
+
 class StorageService {
   private isClient(): boolean {
     return typeof window !== 'undefined';
@@ -26,12 +51,30 @@ class StorageService {
   public getUserSession(): UserSession | null {
     if (!this.isClient()) return null;
     const raw = localStorage.getItem(STORAGE_KEYS.USER_SESSION);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+
+    try {
+      const session: UserSession = JSON.parse(raw);
+      // Agar smena tugash vaqti (09:00 yoki 21:00) o'tib ketgan bo'lsa, sessiyani avtomatik tozalaymiz
+      const now = Date.now();
+      const expiresAt = session.expiresAt || (session.loginTime ? getNextShiftChangeTimestamp(new Date(session.loginTime)) : 0);
+      if (expiresAt && now >= expiresAt) {
+        console.warn('Smena almashdi (09:00 / 21:00), xavfsizlik uchun hisobdan chiqildi.');
+        this.saveUserSession(null);
+        return null;
+      }
+      return session;
+    } catch {
+      return null;
+    }
   }
 
   public saveUserSession(session: UserSession | null) {
     if (!this.isClient()) return;
     if (session) {
+      if (!session.expiresAt) {
+        session.expiresAt = getNextShiftChangeTimestamp(new Date());
+      }
       localStorage.setItem(STORAGE_KEYS.USER_SESSION, JSON.stringify(session));
     } else {
       localStorage.removeItem(STORAGE_KEYS.USER_SESSION);

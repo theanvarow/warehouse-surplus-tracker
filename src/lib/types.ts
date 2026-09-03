@@ -17,6 +17,7 @@ export interface UserSession {
   shift: ShiftId;
   shiftPeriod: ShiftPeriod;
   loginTime: string;
+  expiresAt?: number; // Smena tugash vaqti timestamp (09:00 yoki 21:00)
 }
 
 export const ITEM_REASONS = [
