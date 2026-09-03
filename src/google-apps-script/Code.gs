@@ -7,17 +7,19 @@
  */
 
 const SHEET_ID = '1ITy_OER1O6YIjoopZUR31rBxj9v8bwsBfp1rUalJO3A';
-const SHEET_NAME = 'Лишний_Товар';
+const SHEET_NAME = 'Фиксация проблемных товаров';
 
 function getOrCreateSheet() {
   const ss = SpreadsheetApp.openById(SHEET_ID) || SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAME);
   
   if (!sheet) {
-    const firstSheet = ss.getSheets()[0];
-    if (firstSheet && firstSheet.getLastRow() === 0) {
-      sheet = firstSheet;
-      sheet.setName(SHEET_NAME);
+    const existingSheet = ss.getSheetByName('Лишний_Товар') || ss.getSheets()[0];
+    if (existingSheet) {
+      sheet = existingSheet;
+      try {
+        sheet.setName(SHEET_NAME);
+      } catch (e) {}
     } else {
       sheet = ss.insertSheet(SHEET_NAME);
     }
