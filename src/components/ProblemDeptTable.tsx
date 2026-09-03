@@ -41,7 +41,51 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
   useEffect(() => {
     if (!isUnlocked) {
       passwordInputRef.current?.focus();
+      return;
     }
+
+    // ⏳ 2 DAQIQALIK HARAKATSIZLIKDA AVTOMATIK QULFLASH (Inactivity Auto-Lock)
+    let autoLockTimer: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      clearTimeout(autoLockTimer);
+      // 2 daqiqa (120 000 ms) harakatsizlikdan so'ng avtomatik qulflash
+      autoLockTimer = setTimeout(() => {
+        setIsUnlocked(false);
+        setPassword('');
+        setPasswordError('');
+        console.log('🔒 Harakatsizlik sababli Monitoring avtomatik qulflandi.');
+      }, 120000);
+    };
+
+    resetTimer();
+
+    // Harakatlarni kuzatish (sichqoncha, klaviatura, scroll, teginish)
+    const activityEvents = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    activityEvents.forEach((ev) => window.addEventListener(ev, resetTimer));
+
+    // Brauzer vkladkasi orqaga surilganda (tab blur / minimize)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Boshqa vkladkaga o'tib ketganda 30 soniyada qulflanadi
+        clearTimeout(autoLockTimer);
+        autoLockTimer = setTimeout(() => {
+          setIsUnlocked(false);
+          setPassword('');
+          setPasswordError('');
+        }, 30000);
+      } else {
+        resetTimer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearTimeout(autoLockTimer);
+      activityEvents.forEach((ev) => window.removeEventListener(ev, resetTimer));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [isUnlocked]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
