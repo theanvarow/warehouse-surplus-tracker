@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 248, 250, 252;
+  --background: #191b26;
+  --surface: #1f2232;
+  --surface-border: #2e3347;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: #312e81;
+  --uzum-purple: #7000ff;
+}
+
+body {
+  color: #f8fafc;
+  background-color: #191b26;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+}
+
+p, span, label, input, button, td, th, li {
+  font-size: inherit;
+}
+
+h1 { font-size: 2.25rem; font-weight: 800; }
+h2 { font-size: 1.85rem; font-weight: 800; }
+h3 { font-size: 1.45rem; font-weight: 700; }
+h4 { font-size: 1.2rem; font-weight: 700; }
+
+/* Custom clean laser line */
+@keyframes cleanLaserSweep {
+  0% { top: 10%; opacity: 0.9; }
+  50% { top: 85%; opacity: 0.3; }
+  100% { top: 10%; opacity: 0.9; }
+}
+
+.animate-scan-laser {
+  animation: cleanLaserSweep 2s ease-in-out infinite;
+}
+
+/* Crisp Clean Scrollbars for Dark Theme */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #141520;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2e3347;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3e455e;
+}
+
+/* Card glass aesthetics in #191b26 theme */
+.clean-card {
+  background: rgba(31, 34, 50, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #2e3347;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.clean-card:hover {
+  box-shadow: 0 20px 40px -5px rgba(112, 0, 255, 0.25);
+  border-color: #7000ff;
+}
