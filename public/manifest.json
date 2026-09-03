@@ -1,0 +1,17 @@
+{
+  "name": "VP Pershot - Warehouse Surplus Tracker",
+  "short_name": "VP Pershot",
+  "description": "High-Performance Warehouse Surplus & Discrepancy Recording System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#191b26",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/app-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
