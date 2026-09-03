@@ -1,6 +1,7 @@
 {
-  "name": "vp-pershot-fiksatsiya",
+  "name": "warehouse-surplus-tracker",
   "version": "1.0.0",
+  "description": "Warehouse Surplus & Inventory Discrepancy Recording System with Real-Time Google Sheets Sync",
   "private": true,
   "scripts": {
     "dev": "next dev",

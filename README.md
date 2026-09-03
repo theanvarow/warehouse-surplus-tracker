@@ -1,78 +1,95 @@
-# VP Pershot - Ortiqcha Tovarlarni Fiksatsiya Qilish Tizimi (Google Sheets Integratsiyasi)
+# Warehouse Surplus Tracker 📦
 
-Ushbu dastur omborxona xodimlari va **Muammoli otdel (Problem Department)** uchun mo'ljallangan bo'lib, koruplardan chiqqan ortiqcha tovarlarni apparatli shtrix-kod skaner (yoki kamera) orqali fiksatsiya qilish va real vaqtda **Google Sheets** jadvaliga avtomatik kiritish imkonini beradi.
-
----
-
-## 🚀 Asosiy Imkoniyatlar
-
-1. **🌐 Ko'p tilli interfeys:** O'zbekcha 🇺🇿 va Ruscha 🇷🇺 (1-klikda almashtirish).
-2. **👤 Xodim Avtorizatsiyasi:** Tezkor xodim tanlash va tizimga kirish.
-3. **⏰ 4 ta Smena:** Smena 1, Smena 2, Smena 3, Smena 4.
-4. **📦 Korup & Tovar Skanerlash:**
-   - Apparatli laser shtrix-kod skanerlar uchun avtofokus va tezkor buferlash.
-   - Skanerlanganda yoqimli audio effektlar (Web Audio API).
-   - Tovar korup ichida takrorlansa, avtomatik sonini oshirish (+1).
-   - Smartfon/Planshet kamerasi orqali skanerlash imkoniyati.
-5. **🎉 "Zavershit Korup" Tugmasi:**
-   - Korupni yopish, xulosa va konfetti animatsiyasi.
-   - Fonda Google Sheets ga xavfsiz sinxronizatsiya.
-   - Avtomatik keyingi korupni skanerlash oynasiga qaytish.
-6. **📊 Muammoli Otdel (Problem Dept) Paneli:**
-   - Barcha koruplar va tovarlarni real vaqtda ko'rish.
-   - Korup raqami, barcode yoki xodim bo'yicha qidirish.
-   - Holatlarni yangilash (*Yangi*, *Tekshirilmoqda*, *Qayta ishlandi*, *Muammo hal qilindi*).
-   - Excel (.xlsx) formatida hisobot yuklab olish.
-7. **☁️ Offline Rejim:** Internet uzilsa ham skanerlangan ma'lumotlar saqlanib qoladi va tarmoq tiklangach yuboriladi.
+> **High-Performance Warehouse Surplus & Discrepancy Recording System**  
+> Built for return stream sorting stations (VP Recount), featuring hardware laser barcode scanner integration, real-time Google Sheets synchronization, and live concurrency control for 50+ simultaneous operators.
 
 ---
 
-## 📊 Google Sheets Jadvali bilan Integratsiya
+## 🌟 Key Features
 
-Berilgan Google Jadval:
-👉 `https://docs.google.com/spreadsheets/d/1ITy_OER1O6YIjoopZUR31rBxj9v8bwsBfp1rUalJO3A/edit?gid=0#gid=0`
+1. **⚡ Fast Hardware Scanner Integration:**
+   - Automatic input buffering and laser scanner event listener (with instant reset via `$BT#CLEAR` command).
+   - Dynamic audio feedback via Web Audio API for fast operational workflows.
+   - Dual-input mode: Keyboard/Laser Barcode Scanner or Mobile/Tablet Camera.
 
-### 1-Daqiqalik O'rnatish Qo'llanmasi (Google Apps Script):
-1. Google Jadvalingizga kiring: [Google Sheets](https://docs.google.com/spreadsheets/d/1ITy_OER1O6YIjoopZUR31rBxj9v8bwsBfp1rUalJO3A/edit)
-2. Yuqori menyudan **Kengaytmalar (Extensions)** -> **Apps Script** bo'limiga kiring.
-3. Loyihadagi `src/google-apps-script/Code.gs` kodini to'liq nusxalab, u yerga qo'ying va saqlang (Ctrl+S / Cmd+S).
-4. O'ng yuqoridagi ko'k **Deploy (Развернуть)** -> **New deployment (Новое развертывание)** tugmasini bosing:
-   - Turini tanlang: **Web app (Веб-приложение)**
-   - Description: `VP Pershot API`
-   - Execute as: **Me (Mening nomimdan)**
-   - Who has access: **Anyone (Hamma)**
-5. **Deploy** tugmasini bosing va berilgan **Web app URL** manzilini nusxalang.
-6. Dasturimizning **⚙️ Sozlamalar (Настройки)** bo'limiga kirib, ushbu URL manzilni qo'ying va **"Aloqani tekshirish"** tugmasini bosing!
+2. **📊 Real-Time Analytics & Monitoring Dashboard:**
+   - **Today's Summary:** Total items and total boxes recorded today.
+   - **Top PVZ Distribution:** Live ranking of pickup points with the most surplus items.
+   - **Discrepancy Reasons Breakdown:** Instant statistics on reasons (*Surplus in Box*, *QR/IMEI Defect*, *Item without Act*, *Previously Cancelled*, *Wrong Item*, *Empty Package*, *Order Already Delivered*).
+
+3. **☁️ Real-Time Google Sheets Sync:**
+   - Direct two-way integration with Google Apps Script Web App.
+   - Server-side in-memory caching (15s TTL) to prevent rate limits under heavy traffic.
+   - Automatic background retries (3x) and Offline Queue for network resilience.
+
+4. **👥 Multi-Operator Concurrency (50+ Simultaneous Users):**
+   - Individual session management per workstation (Operator Name, Table/Desk Number, Shift 1–4).
+   - Concurrency locking mechanism (`LockService.waitLock(30000)`) preventing row overwrite conflicts.
+
+5. **🌐 Bilingual Interface:**
+   - Instant 1-click switching between Uzbek 🇺🇿 and Russian 🇷🇺.
 
 ---
 
-## ⚡ Vercel-ga Joylash (Deploy)
+## 🚀 Tech Stack
 
-Ushbu dastur Vercel uchun 100% optimallashtirilgan.
+- **Framework:** [Next.js 14 (App Router)](https://nextjs.org/)
+- **UI & Styling:** [Tailwind CSS](https://tailwindcss.com/), [Lucide Icons](https://lucide.dev/)
+- **State & Storage:** LocalStorage + Offline Sync Queue + Server-side In-Memory Cache
+- **Backend & Database:** Google Sheets API + Google Apps Script Web App
+- **Language:** TypeScript 5
 
-### 1-usul: GitHub orqali
-1. Loyihani GitHub repozitoriyingizga push qiling:
+---
+
+## 📦 Deployment Guide
+
+### Deploying to Vercel (Recommended & 100% Free)
+
+This project is optimized for deployment on Vercel:
+
+1. **Via Vercel CLI:**
    ```bash
-   git init
-   git add .
-   git commit -m "Initial commit for VP Pershot app"
-   git branch -M main
-   git remote add origin YOUR_GITHUB_REPO_URL
-   git push -u origin main
+   npx vercel
    ```
-2. [Vercel Dashboard](https://vercel.com/dashboard) ga kiring -> **Add New...** -> **Project**.
-3. Repozitoriyangizni tanlang va **Deploy** tugmasini bosing!
-
-### 2-usul: Vercel CLI orqali
-```bash
-npx vercel
-```
+2. **Via GitHub Integration:**
+   - Import this repository on [vercel.com](https://vercel.com/new).
+   - Click **Deploy**. Vercel will automatically build and assign a global HTTPS domain.
 
 ---
 
-## 🛠 Lokal Ishga Tushirish
+## 📊 Google Apps Script Setup
+
+1. Open your target Google Sheet.
+2. Navigate to **Extensions (Расширения)** ➔ **Apps Script**.
+3. Copy and paste the code from [`src/google-apps-script/Code.gs`](./src/google-apps-script/Code.gs).
+4. Click **Deploy (Развернуть)** ➔ **New deployment (Новое развертывание)**:
+   - Type: **Web app**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. Copy the generated Web App URL and configure it in the application.
+
+---
+
+## 🛠 Local Development
+
 ```bash
+# Clone the repository
+git clone https://github.com/theanvarow/warehouse-surplus-tracker.git
+
+# Navigate to project folder
+cd warehouse-surplus-tracker
+
+# Install dependencies
 npm install
+
+# Start local development server
 npm run dev
 ```
-Brauzerda `http://localhost:3000` manzilini oching.
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 📄 License
+
+MIT License © 2026 Sirojiddin Anvarov
