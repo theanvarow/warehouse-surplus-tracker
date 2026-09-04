@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ITEM_REASONS, ItemReason, Language, ScannedItem, UserSession } from '@/lib/types';
 import { useTranslation } from '@/lib/translations';
 import { soundManager } from '@/lib/sound';
-import { searchPvz, getRecentPvzList, addRecentPvz, PvzItem } from '@/lib/pvzList';
+import { searchPvz, getRecentPvzList, addRecentPvz, PvzItem, toCyrillic, normalizeChars } from '@/lib/pvzList';
 import {
   Package,
   MapPin,
@@ -87,10 +87,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
   // PVZ inputiga harf yoki raqam yozilganda
   const handlePvzChange = (val: string) => {
     setPvz(val);
-    const matches = searchPvz(val, 25);
+    const matches = searchPvz(val, 30);
     setPvzSuggestions(matches);
     setIsPvzDropdownOpen(matches.length > 0);
-    setSelectedPvzIndex(matches.length > 0 ? 0 : -1);
+    setSelectedPvzIndex(-1);
   };
 
   // PVZ inputida tugmalar harakati (ArrowDown, ArrowUp, Enter, Escape)
@@ -108,10 +108,23 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       }
       if (e.key === 'Enter') {
         e.preventDefault();
+        // 1. Agar foydalanuvchi strelkalar bilan biror PVZ ustiga borgan bo'lsa
         if (selectedPvzIndex >= 0 && selectedPvzIndex < pvzSuggestions.length) {
           handleSelectPvz(pvzSuggestions[selectedPvzIndex].code);
-        } else if (pvzSuggestions.length > 0) {
+          return;
+        }
+
+        // 2. Agar foydalanuvchi yozgan narsa 1-natijaga teng yoki mos kelsa (masalan: "tash-14" yoki "таш 14" -> "ТАШ-14")
+        const currentNorm = normalizeChars(toCyrillic(pvz));
+        const firstNorm = normalizeChars(toCyrillic(pvzSuggestions[0].code));
+        if (currentNorm && currentNorm === firstNorm) {
           handleSelectPvz(pvzSuggestions[0].code);
+          return;
+        }
+
+        // 3. Aks holda foydalanuvchi kiritgan qiymatni qabul qilamiz
+        if (pvz.trim()) {
+          handleSelectPvz(pvz.trim());
         } else {
           setIsPvzDropdownOpen(false);
           barcodeRef.current?.focus();
@@ -126,8 +139,12 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
     if (e.key === 'Enter') {
       e.preventDefault();
-      setIsPvzDropdownOpen(false);
-      barcodeRef.current?.focus();
+      if (pvz.trim()) {
+        handleSelectPvz(pvz.trim());
+      } else {
+        setIsPvzDropdownOpen(false);
+        barcodeRef.current?.focus();
+      }
     }
   };
 
@@ -507,9 +524,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 value={pvz}
                 onChange={(e) => handlePvzChange(e.target.value)}
                 onFocus={() => {
-                  const matches = searchPvz(pvz, 25);
+                  const matches = searchPvz(pvz, 30);
                   setPvzSuggestions(matches);
                   setIsPvzDropdownOpen(matches.length > 0);
+                  setSelectedPvzIndex(-1);
                 }}
                 onKeyDown={handlePvzKeyDown}
                 placeholder={language === 'uz' ? 'Bosh harf yoki raqam (masalan: таш, 12, гул...)' : 'Код или номер (напр: таш, 12, гул...)'}
@@ -522,9 +540,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   type="button"
                   onClick={() => {
                     setPvz('');
-                    const matches = searchPvz('', 20);
+                    const matches = searchPvz('', 30);
                     setPvzSuggestions(matches);
                     setIsPvzDropdownOpen(true);
+                    setSelectedPvzIndex(-1);
                     pvzRef.current?.focus();
                   }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 cursor-pointer"
