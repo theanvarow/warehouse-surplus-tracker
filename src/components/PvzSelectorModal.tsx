@@ -63,7 +63,7 @@ export const PvzSelectorModal: React.FC<PvzSelectorModalProps> = ({
       return POPULAR_PVZ_LIST.slice(0, 10);
     }
 
-    return POPULAR_PVZ_LIST.filter((item) => {
+    return POPULAR_PVZ_LIST.filter((item: PvzItem) => {
       const matchRegion = selectedRegion === 'all' || item.region === selectedRegion;
       if (!matchRegion) return false;
       if (!query) return true;
@@ -275,12 +275,12 @@ export const PvzSelectorModal: React.FC<PvzSelectorModalProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {suggestions.map((item, idx) => {
+              {suggestions.map((item: PvzItem, idx: number) => {
                 const isHighlighted = selectedIndex === idx;
                 const fullPvzName = `${item.code} - ${item.name}`;
                 return (
                   <button
-                    key={item.id}
+                    key={item.code || idx}
                     type="button"
                     onClick={() => handleConfirm(fullPvzName)}
                     onMouseEnter={() => setSelectedIndex(idx)}
