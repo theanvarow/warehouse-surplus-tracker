@@ -15,7 +15,7 @@
 2. **📊 Real-Time Analytics & Monitoring Dashboard:**
    - **Today's Summary:** Total items and total boxes recorded today.
    - **Top PVZ Distribution:** Live ranking of pickup points with the most surplus items.
-   - **Discrepancy Reasons Breakdown:** Instant statistics on reasons (*Surplus in Box*, *QR/IMEI Defect*, *Item without Act*, *Previously Cancelled*, *Wrong Item*, *Empty Package*, *Order Already Delivered*).
+   - **Discrepancy Reasons Breakdown:** Instant statistics on reasons (*Surplus in Box*, *QR/IMEI Defect*, *Item without Act*, *Previously Cancelled*, *Wrong Item*, *Empty Package*, *Order Already Delivered*, *Already Recounted*).
 
 3. **☁️ Real-Time Google Sheets Sync:**
    - Direct two-way integration with Google Apps Script Web App.

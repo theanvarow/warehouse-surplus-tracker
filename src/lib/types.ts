@@ -28,6 +28,7 @@ export const ITEM_REASONS = [
   'Неверный товар',
   'Пустая упаковка без товара внутри',
   'Заказ в статусе "Выдан / К выдаче / Доставляется"',
+  'Товар уже пересчитан',
 ] as const;
 
 export type ItemReason = typeof ITEM_REASONS[number];
