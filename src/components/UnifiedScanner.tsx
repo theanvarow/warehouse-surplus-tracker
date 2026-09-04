@@ -87,16 +87,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
   // PVZ inputiga harf yoki raqam yozilganda
   const handlePvzChange = (val: string) => {
     setPvz(val);
-    if (val.trim().length > 0) {
-      const matches = searchPvz(val, 8);
-      setPvzSuggestions(matches);
-      setIsPvzDropdownOpen(matches.length > 0);
-      setSelectedPvzIndex(matches.length > 0 ? 0 : -1);
-    } else {
-      setPvzSuggestions([]);
-      setIsPvzDropdownOpen(false);
-      setSelectedPvzIndex(-1);
-    }
+    const matches = searchPvz(val, 25);
+    setPvzSuggestions(matches);
+    setIsPvzDropdownOpen(matches.length > 0);
+    setSelectedPvzIndex(matches.length > 0 ? 0 : -1);
   };
 
   // PVZ inputida tugmalar harakati (ArrowDown, ArrowUp, Enter, Escape)
@@ -513,14 +507,12 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 value={pvz}
                 onChange={(e) => handlePvzChange(e.target.value)}
                 onFocus={() => {
-                  if (pvz.trim().length > 0) {
-                    const matches = searchPvz(pvz, 8);
-                    setPvzSuggestions(matches);
-                    setIsPvzDropdownOpen(matches.length > 0);
-                  }
+                  const matches = searchPvz(pvz, 25);
+                  setPvzSuggestions(matches);
+                  setIsPvzDropdownOpen(matches.length > 0);
                 }}
                 onKeyDown={handlePvzKeyDown}
-                placeholder={language === 'uz' ? 'Bosh harfi yoki raqam (masalan: таш, 12, гул...)' : 'Код или номер (напр: таш, 12, гул...)'}
+                placeholder={language === 'uz' ? 'Bosh harf yoki raqam (masalan: таш, 12, гул...)' : 'Код или номер (напр: таш, 12, гул...)'}
                 className="w-full pl-3.5 pr-8 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 autoComplete="off"
               />
@@ -530,8 +522,9 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   type="button"
                   onClick={() => {
                     setPvz('');
-                    setPvzSuggestions([]);
-                    setIsPvzDropdownOpen(false);
+                    const matches = searchPvz('', 20);
+                    setPvzSuggestions(matches);
+                    setIsPvzDropdownOpen(true);
                     pvzRef.current?.focus();
                   }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 cursor-pointer"
@@ -543,7 +536,11 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
             {/* Smart Suggestions Floating Dropdown */}
             {isPvzDropdownOpen && pvzSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#1b1e2c] border border-indigo-500/50 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md max-h-64 overflow-y-auto divide-y divide-[#282d3f] animate-fade-in">
+              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#1b1e2c] border border-indigo-500/50 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md max-h-72 overflow-y-auto divide-y divide-[#282d3f] animate-fade-in">
+                <div className="px-3 py-1.5 bg-[#141622] text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center justify-between border-b border-[#282d3f]">
+                  <span>{language === 'uz' ? 'Mos keluvchi PVZlar' : 'Подходящие ПВЗ'}</span>
+                  <span className="text-slate-400 font-mono">{pvzSuggestions.length} {language === 'uz' ? 'ta' : 'вариантов'}</span>
+                </div>
                 {pvzSuggestions.map((item, idx) => {
                   const isSelected = selectedPvzIndex === idx;
                   return (
