@@ -657,24 +657,24 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 : 'Пожалуйста, выберите точную причину обнаружения данного товара:'}
             </p>
 
-            {/* List of 7 Reasons as big clickable touch buttons */}
-            <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+            {/* List of 8 Reasons as big clickable touch buttons */}
+            <div className="space-y-2 max-h-[min(540px,65vh)] overflow-y-auto pr-1">
               {ITEM_REASONS.map((reason, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => confirmAddItemWithReason(reason)}
-                  className="w-full text-left p-3.5 rounded-2xl bg-[#161822] hover:bg-indigo-600/30 border border-[#2e3347] hover:border-indigo-400/80 transition-all cursor-pointer group flex items-center justify-between"
+                  className="w-full text-left p-3 rounded-2xl bg-[#161822] hover:bg-indigo-600/30 border border-[#2e3347] hover:border-indigo-400/80 transition-all cursor-pointer group flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="w-6 h-6 rounded-lg bg-[#25283a] group-hover:bg-indigo-600 text-slate-300 group-hover:text-white flex items-center justify-center font-bold text-xs">
+                    <span className="w-6 h-6 rounded-lg bg-[#25283a] group-hover:bg-indigo-600 text-slate-300 group-hover:text-white flex items-center justify-center font-bold text-xs shrink-0">
                       {idx + 1}
                     </span>
-                    <span className="text-sm font-bold text-slate-100 group-hover:text-white">
+                    <span className="text-xs sm:text-sm font-bold text-slate-100 group-hover:text-white leading-snug">
                       {reason}
                     </span>
                   </div>
-                  <span className="text-xs text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                  <span className="text-xs text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity font-bold shrink-0 ml-2">
                     ➔
                   </span>
                 </button>
