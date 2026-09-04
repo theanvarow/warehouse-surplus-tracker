@@ -501,17 +501,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
           {/* FIELD 2: PVZ INPUT WITH SMART AUTOCOMPLETE */}
           <div ref={pvzContainerRef} className="space-y-1 relative">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
-                <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-                <span>2. {language === 'uz' ? 'ПВЗ' : 'ПВЗ'}</span>
-              </label>
-              {recentPvzList.length > 0 && (
-                <span className="text-[10px] font-bold text-slate-400">
-                  {language === 'uz' ? 'Tezkor tanlash:' : 'Быстрый выбор:'}
-                </span>
-              )}
-            </div>
+            <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
+              <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+              <span>2. {language === 'uz' ? 'ПВЗ' : 'ПВЗ'}</span>
+            </label>
 
             <div className="relative">
               <input
@@ -579,26 +572,6 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                     </button>
                   );
                 })}
-              </div>
-            )}
-
-            {/* Recent PVZs Quick Chips */}
-            {recentPvzList.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {recentPvzList.slice(0, 5).map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => handleSelectPvz(code)}
-                    className={`text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer active:scale-95 ${
-                      pvz.trim().toLowerCase() === code.toLowerCase()
-                        ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
-                        : 'bg-[#161822] hover:bg-indigo-600/30 text-slate-300 hover:text-indigo-300 border-[#2e3347] hover:border-indigo-500/50'
-                    }`}
-                  >
-                    {code}
-                  </button>
-                ))}
               </div>
             )}
           </div>
