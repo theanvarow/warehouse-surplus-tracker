@@ -579,14 +579,11 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-[#2e3347] text-slate-400 uppercase tracking-wider font-black text-[10px]">
-                      <th className="py-2.5 px-3 w-14 text-center">№</th>
-                      <th className="py-2.5 px-3">{language === 'uz' ? 'Xodim (FIO)' : 'Сотрудник (ФИО)'}</th>
-                      <th className="py-2.5 px-3 text-center">{language === 'uz' ? 'Stol raqami' : 'Номер стола'}</th>
-                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'Tovar soni' : 'Товаров'}</th>
-                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'Koruplar' : 'Коробов'}</th>
-                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'O\'rtacha / korup' : 'Ср. на короб'}</th>
-                      <th className="py-2.5 px-4 w-48">{language === 'uz' ? 'Ulushi (Foiz)' : 'Доля в выработке'}</th>
-                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'Oxirgi faollik' : 'Посл. запись'}</th>
+                      <th className="py-3 px-3 w-14 text-center">№</th>
+                      <th className="py-3 px-4">{language === 'uz' ? 'Xodim (FIO)' : 'Сотрудник (ФИО)'}</th>
+                      <th className="py-3 px-4 text-center">{language === 'uz' ? 'Stol raqami' : 'Номер стола'}</th>
+                      <th className="py-3 px-4 text-right">{language === 'uz' ? 'Tovar soni' : 'Товаров'}</th>
+                      <th className="py-3 px-4 text-right">{language === 'uz' ? 'Koruplar soni' : 'Коробов'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#2e3347]/60">
@@ -598,16 +595,16 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
                         }`}
                       >
                         {/* 1. O'rin / Rank */}
-                        <td className="py-3 px-3 text-center">
+                        <td className="py-3.5 px-3 text-center">
                           <div className="flex items-center justify-center">
                             {getRankBadge(idx)}
                           </div>
                         </td>
 
                         {/* 2. Xodim FIO */}
-                        <td className="py-3 px-3 font-bold text-white">
-                          <div className="flex items-center space-x-2.5">
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0 ${
+                        <td className="py-3.5 px-4 font-bold text-white">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
                               idx === 0
                                 ? 'bg-amber-500 text-slate-950 shadow-xs shadow-amber-500/30'
                                 : idx === 1
@@ -618,72 +615,40 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
                             }`}>
                               {getInitials(emp.operator)}
                             </div>
-                            <span className="truncate max-w-[200px] text-slate-100 font-extrabold">
+                            <span className="truncate max-w-[260px] text-slate-100 font-black text-sm sm:text-base">
                               {emp.operator}
                             </span>
                           </div>
                         </td>
 
                         {/* 3. Stol raqami */}
-                        <td className="py-3 px-3 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           {emp.tables.length > 0 ? (
-                            <div className="flex items-center justify-center gap-1 flex-wrap">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
                               {emp.tables.map((tbl, tIdx) => (
                                 <span
                                   key={tIdx}
-                                  className="px-2 py-0.5 bg-indigo-950/70 border border-indigo-700/60 rounded-md font-mono text-[11px] font-bold text-indigo-300"
+                                  className="px-2.5 py-1 bg-indigo-950/80 border border-indigo-700/70 rounded-lg font-mono text-xs font-bold text-indigo-300"
                                 >
                                   {tbl}
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <span className="text-slate-500">—</span>
+                            <span className="text-slate-500 font-bold">—</span>
                           )}
                         </td>
 
                         {/* 4. Tovar soni */}
-                        <td className="py-3 px-3 text-right font-mono font-black text-sm text-emerald-400">
+                        <td className="py-3.5 px-4 text-right font-mono font-black text-base text-emerald-400">
                           {emp.itemsCount}{' '}
-                          <span className="text-[10px] font-normal text-slate-400">{language === 'uz' ? 'dona' : 'шт.'}</span>
+                          <span className="text-xs font-bold text-slate-400">{language === 'uz' ? 'dona' : 'шт.'}</span>
                         </td>
 
                         {/* 5. Koruplar soni */}
-                        <td className="py-3 px-3 text-right font-mono font-black text-indigo-300">
+                        <td className="py-3.5 px-4 text-right font-mono font-black text-base text-indigo-300">
                           {emp.boxesCount}{' '}
-                          <span className="text-[10px] font-normal text-slate-400">{language === 'uz' ? 'ta' : 'кор.'}</span>
-                        </td>
-
-                        {/* 6. O'rtacha / korup */}
-                        <td className="py-3 px-3 text-right font-mono text-slate-300 font-bold">
-                          {emp.avgPerBox}
-                        </td>
-
-                        {/* 7. Ulush va progress bar */}
-                        <td className="py-3 px-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px] font-bold">
-                              <span className="text-slate-400">{emp.percent}%</span>
-                            </div>
-                            <div className="w-full bg-[#25283a] h-2 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  idx === 0
-                                    ? 'bg-gradient-to-r from-amber-500 to-emerald-400'
-                                    : 'bg-indigo-500'
-                                }`}
-                                style={{ width: `${Math.max(emp.percent, 3)}%` }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* 8. Oxirgi faollik */}
-                        <td className="py-3 px-3 text-right font-mono text-[11px] text-slate-400">
-                          <div className="flex items-center justify-end space-x-1">
-                            <Clock className="w-3 h-3 text-slate-500" />
-                            <span>{formatActivityTime(emp.lastTimestamp)}</span>
-                          </div>
+                          <span className="text-xs font-bold text-slate-400">{language === 'uz' ? 'ta' : 'кор.'}</span>
                         </td>
                       </tr>
                     ))}
@@ -715,34 +680,21 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-[#191b26] p-2 rounded-xl border border-[#2e3347]/60">
+                      <div className="bg-[#191b26] p-2.5 rounded-xl border border-[#2e3347]/60">
                         <span className="text-[10px] text-slate-400 block uppercase font-bold">
                           {language === 'uz' ? 'Tovarlar' : 'Товаров'}
                         </span>
-                        <span className="font-mono font-black text-emerald-400 text-sm">
+                        <span className="font-mono font-black text-emerald-400 text-sm sm:text-base">
                           {emp.itemsCount} {language === 'uz' ? 'dona' : 'шт.'}
                         </span>
                       </div>
-                      <div className="bg-[#191b26] p-2 rounded-xl border border-[#2e3347]/60">
+                      <div className="bg-[#191b26] p-2.5 rounded-xl border border-[#2e3347]/60">
                         <span className="text-[10px] text-slate-400 block uppercase font-bold">
                           {language === 'uz' ? 'Koruplar' : 'Коробов'}
                         </span>
-                        <span className="font-mono font-black text-indigo-300 text-sm">
+                        <span className="font-mono font-black text-indigo-300 text-sm sm:text-base">
                           {emp.boxesCount} {language === 'uz' ? 'ta' : 'кор.'}
                         </span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px] font-bold">
-                        <span className="text-slate-400">{language === 'uz' ? 'Umumiy ulush' : 'Доля в выработке'}:</span>
-                        <span className="text-indigo-300 font-mono">{emp.percent}%</span>
-                      </div>
-                      <div className="w-full bg-[#25283a] h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-indigo-500 h-full rounded-full transition-all duration-500"
-                          style={{ width: `${Math.max(emp.percent, 3)}%` }}
-                        />
                       </div>
                     </div>
                   </div>
