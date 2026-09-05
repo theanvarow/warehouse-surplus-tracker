@@ -507,7 +507,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   pvzRef.current?.focus();
                 }
               }}
-              placeholder={language === 'uz' ? 'Masalan: 80-000' : 'Напр: 80-000'}
+              placeholder={language === 'uz' ? 'Masalan: 85-000' : 'Напр: 85-000'}
               className="w-full px-3.5 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all uppercase"
               autoComplete="off"
             />
