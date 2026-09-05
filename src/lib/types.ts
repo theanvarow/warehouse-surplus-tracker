@@ -22,7 +22,7 @@ export interface UserSession {
 
 export const ITEM_REASONS = [
   'Лишний товар в коробе',
-  'QR / IMEI БРАК',
+  'QR / IMEI',
   'Товар без акта',
   'Ранее отменен',
   'Неверный товар',
