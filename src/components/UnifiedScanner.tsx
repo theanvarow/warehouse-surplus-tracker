@@ -484,7 +484,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
           <div className="space-y-1">
             <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
               <Package className="w-3.5 h-3.5 text-indigo-400" />
-              <span>1. {language === 'uz' ? 'Qaysi korupdan chiqdi?' : 'Из какого короба извлечен?'}</span>
+              <span>1. {language === 'uz' ? 'Qaysi korupdan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
             </label>
             <input
               ref={boxRef}

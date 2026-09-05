@@ -243,7 +243,7 @@ export const translations = {
     colTimestamp: 'Дата и Время',
     colShift: 'Смена',
     colOperator: 'Сотрудник',
-    colBox: 'Из какого короба №',
+    colBox: 'Из какого Грузоместа №',
     colTargetBox: 'Куда переложен',
     targetBoxLabel: 'Куда переложен (Новый короб)',
     targetBoxPlaceholder: 'Напр: 80-002',
