@@ -355,9 +355,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
   // Finish Box and send to Google Sheets
   const handleFinishBox = async () => {
-    if (!boxNumber.trim()) {
+    const cleanBox = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
+    if (!cleanBox || cleanBox.length < 2) {
       soundManager.playErrorSound();
-      alert(language === 'uz' ? 'Chiqarilgan korup raqamini kiriting!' : 'Укажите номер исходного короба!');
+      alert(language === 'uz' ? 'Chiqarilgan korup raqamini to\'g\'ri kiriting!' : 'Укажите корректный номер исходного короба!');
       boxRef.current?.focus();
       return;
     }
@@ -369,12 +370,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       return;
     }
 
-    if (!targetBox.trim()) {
+    const cleanTargetBox = targetBox.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
+    if (!cleanTargetBox || cleanTargetBox.length < 2 || !/[a-zA-Z0-9а-яА-ЯёЁ]/.test(cleanTargetBox)) {
       soundManager.playErrorSound();
       alert(
         language === 'uz'
-          ? 'Qayta joylangan korup (Куда переложен) raqamini kiriting!'
-          : 'Пожалуйста, укажите короб, куда переложен товар (Куда переложен)!'
+          ? 'Qayta joylangan korup (Куда переложен) raqami noto\'g\'ri! Korup shtrix-kodini to\'liq skanerlang (masalan: 80-0007273534). Qavs ")" yoki boshqa belgilar kiritish taqiqlangan!'
+          : 'Неверный номер короба «Куда переложен»! Отсканируйте реальный штрих-код короба (напр: 80-0007273534). Символы вроде ")" запрещены!'
       );
       targetBoxRef.current?.focus();
       return;
@@ -384,11 +386,12 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     soundManager.playFinishBoxSound();
 
     try {
-      const finalTargetBox = targetBox.trim().toUpperCase() || '—';
+      const finalTargetBox = cleanTargetBox;
+      const finalBoxNumber = cleanBox;
       const finalPvz = pvz.trim() || '—';
       const updatedItems = items.map((i) => ({
         ...i,
-        boxNumber: boxNumber.trim().toUpperCase(),
+        boxNumber: finalBoxNumber,
         targetBox: finalTargetBox,
         pvz: finalPvz,
         operator: userSession.employeeName,
@@ -487,7 +490,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               ref={boxRef}
               type="text"
               value={boxNumber}
-              onChange={(e) => setBoxNumber(e.target.value)}
+              onChange={(e) => setBoxNumber(e.target.value.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase())}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -740,20 +743,35 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 <span>{language === 'uz' ? '📦 Qayta joylangan Korup (Куда переложен)' : '📦 Куда переложен (Новый короб)'}</span>
                 <span className="text-rose-400 font-black text-sm">*</span>
               </label>
-              <span className={`text-[11px] font-bold ${
-                items.length > 0 && !targetBox.trim() ? 'text-amber-400' : 'text-slate-400'
-              }`}>
-                {items.length > 0 && !targetBox.trim()
-                  ? (language === 'uz' ? '⚠️ Majburiy maydon!' : '⚠️ Обязательное поле!')
-                  : (language === 'uz' ? 'Yangi korup raqami' : 'Номер нового короба')}
-              </span>
+              <div className="flex items-center space-x-2">
+                {boxNumber.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setTargetBox(boxNumber.trim().replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase())}
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 transition-all flex items-center space-x-1 cursor-pointer active:scale-95 shadow-sm"
+                    title={language === 'uz' ? 'Tovar yangi korupga o\'tkazilmagan bo\'lsa, shu korup raqamini qo\'yish' : 'Если товар остался в том же коробе'}
+                  >
+                    <span>🔄 {language === 'uz' ? 'Shu korupning o\'zi' : 'В тот же короб'}</span>
+                  </button>
+                )}
+                <span className={`text-[11px] font-bold ${
+                  items.length > 0 && !targetBox.trim() ? 'text-amber-400' : 'text-slate-400'
+                }`}>
+                  {items.length > 0 && !targetBox.trim()
+                    ? (language === 'uz' ? '⚠️ Majburiy!' : '⚠️ Обязательно!')
+                    : (language === 'uz' ? 'Yangi korup' : 'Новый короб')}
+                </span>
+              </div>
             </div>
             <div className="flex gap-2">
               <input
                 ref={targetBoxRef}
                 type="text"
                 value={targetBox}
-                onChange={(e) => setTargetBox(e.target.value)}
+                onChange={(e) => {
+                  const clean = e.target.value.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase();
+                  setTargetBox(clean);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();

@@ -24,7 +24,11 @@ export async function syncItemsToGoogleSheets(items: ScannedItem[]): Promise<Syn
         const shiftDigit = String(item.shift || '').replace(/[^0-9]/g, '') || '1';
         const shiftValue = `Смена ${shiftDigit}`;
 
-        const targetBoxValue = item.targetBox && item.targetBox !== '—' ? item.targetBox : '—';
+        // Yangi korup (Куда переложен) tozalash: qavslar va noto'g'ri belgilarni bartaraf etish
+        let targetBoxValue = (item.targetBox || '').replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim();
+        if (!targetBoxValue || targetBoxValue.length < 2 || targetBoxValue === '—') {
+          targetBoxValue = (item.boxNumber || '—').replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim() || '—';
+        }
 
         // Koment/Izoh ustuniga Tanlangan Prichina yoziladi
         const reasonValue = item.reason || 'Лишний товар в коробе';

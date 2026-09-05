@@ -104,7 +104,10 @@ function doPost(e) {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const rowNum = startRow + i;
-        const targetBoxValue = item.targetBox && item.targetBox !== '—' ? item.targetBox : (item.status || '—');
+        let targetBoxValue = item.targetBox ? String(item.targetBox).replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim() : '';
+        if (!targetBoxValue || targetBoxValue.length < 2 || targetBoxValue === '—') {
+          targetBoxValue = (item.boxNumber ? String(item.boxNumber).replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim() : '') || (item.status || '—');
+        }
         const reasonValue = item.reason || item.note || 'Лишний товар в коробе';
         const pvzValue = item.pvz && item.pvz !== '—' ? item.pvz : '—';
         const shiftText = item.shift ? String(item.shift).replace('Smena ', '') : 'Смена 1';
