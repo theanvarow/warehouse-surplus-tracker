@@ -67,7 +67,7 @@ Tizimda **2 464 ta rasmiy Uzum PVZ** bazasi mavjud bo'lib, qidiruv aqlli transli
 
 ## 4. Muammo Sababini Belgilash
 
-Tovar skanerlangandan so'ng 8 ta rasmiy sababdan biri tanlanadi:
+Tovar skanerlangandan so'ng 9 ta rasmiy sababdan biri tanlanadi:
 
 ![04_reasons_modal](./screenshots/04_reasons_modal.png)
 
@@ -81,6 +81,7 @@ Tovar skanerlangandan so'ng 8 ta rasmiy sababdan biri tanlanadi:
 | **6** | **Пустая упаковка без товара внутри** | Ichida tovari yo'q bo'sh qadoq |
 | **7** | **Заказ в статусе "Выдан / К выдаче / Доставляется"** | Statusi berilgan yoki yetkazilmoqda bo'lgan tovar |
 | **8** | **Товар уже пересчитан** | Avval qayta sanalgan tovar |
+| **9** | **Недокомплект** | Butun to'plamdan qismlari yetishmaydigan (chala) tovar |
 
 ---
 
