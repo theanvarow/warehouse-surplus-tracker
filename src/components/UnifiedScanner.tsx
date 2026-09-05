@@ -250,7 +250,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
     if (!boxNumber.trim()) {
       soundManager.playErrorSound();
-      alert(language === 'uz' ? 'Iltimos, avval Korup raqamini kiriting!' : 'Пожалуйста, сначала укажите номер короба!');
+      alert(language === 'uz' ? 'Iltimos, avval Gruzamesta raqamini kiriting!' : 'Пожалуйста, сначала укажите номер Грузоместа!');
       boxRef.current?.focus();
       return;
     }
@@ -358,7 +358,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     const cleanBox = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
     if (!cleanBox || cleanBox.length < 2) {
       soundManager.playErrorSound();
-      alert(language === 'uz' ? 'Chiqarilgan korup raqamini to\'g\'ri kiriting!' : 'Укажите корректный номер исходного короба!');
+      alert(language === 'uz' ? 'Chiqarilgan Gruzamesta raqamini to\'g\'ri kiriting!' : 'Укажите корректный номер Грузоместа!');
       boxRef.current?.focus();
       return;
     }
@@ -480,11 +480,11 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
         {/* 3 Simple, Compact Inputs in 1 Clean Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          {/* FIELD 1: KORUP RAQAMI (Qaysi korupdan chiqdi) */}
+          {/* FIELD 1: GRUZAMESTA RAQAMI (Qaysi Gruzamestadan chiqdi) */}
           <div className="space-y-1">
             <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
               <Package className="w-3.5 h-3.5 text-indigo-400" />
-              <span>1. {language === 'uz' ? 'Qaysi korupdan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
+              <span>1. {language === 'uz' ? 'Qaysi Gruzamestadan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
             </label>
             <input
               ref={boxRef}

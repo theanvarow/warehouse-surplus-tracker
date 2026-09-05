@@ -102,7 +102,7 @@ export const translations = {
     colTimestamp: 'Sana & Vaqt',
     colShift: 'Smena',
     colOperator: 'Xodim',
-    colBox: 'Qaysi korupdan chiqdi №',
+    colBox: 'Qaysi Gruzamestadan chiqdi №',
     colTargetBox: 'Qayta joylangan Korup',
     targetBoxLabel: 'Qayta joylangan Korup',
     targetBoxPlaceholder: 'Masalan: 80-002',

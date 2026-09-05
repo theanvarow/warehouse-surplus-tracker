@@ -36,8 +36,8 @@ Skanerlash oynasi operatsiyalarni eng tez va xatosiz bajarish uchun optimallasht
 ![02_scanner_main](./screenshots/02_scanner_main.png)
 
 ### Ketma-ketlik:
-1. **1. Qaysi korupdan chiqdi?**  
-   Qutidagi quti raqami shtrix-kodini skanerlang (masalan, `KOROB-78421`).
+1. **1. Qaysi Gruzamestadan chiqdi?**  
+   Gruzamesta shtrix-kodini skanerlang (masalan, `80-000...` yoki `KOROB-78421`).
 2. **2. PVZ (Punkt):**  
    Tovar tegishli bo'lgan PVZ kodini yozing yoki qidiring (masalan, `ТАШ-14`).
 3. **3. Tovar Barkodi:**  
