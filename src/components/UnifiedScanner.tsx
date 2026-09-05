@@ -376,7 +376,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       soundManager.playErrorSound();
       alert(
         language === 'uz'
-          ? '❌ Qayta joylangan korup (Куда переложен) faqat 80 yoki 85 bilan boshlanishi shart! (Masalan: 80-..., 85-...). Boshqa hech narsa qabul qilinmaydi.'
+          ? '❌ Qayta joylangan korup faqat 80 yoki 85 bilan boshlanishi shart! (Masalan: 80-..., 85-...). Boshqa hech narsa qabul qilinmaydi.'
           : '❌ Короб «Куда переложен» должен начинаться только с 80 или 85! (Напр: 80-..., 85-...). Другие номера не принимаются.'
       );
       setTargetBox('');
@@ -522,7 +522,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
           <div ref={pvzContainerRef} className="space-y-1 relative">
             <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
               <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-              <span>2. {language === 'uz' ? 'ПВЗ' : 'ПВЗ'}</span>
+              <span>2. {language === 'uz' ? 'PVZ' : 'ПВЗ'}</span>
             </label>
 
             <div className="relative">
@@ -538,7 +538,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   setSelectedPvzIndex(-1);
                 }}
                 onKeyDown={handlePvzKeyDown}
-                placeholder={language === 'uz' ? 'Bosh harf yoki raqam (masalan: таш, 12, гул...)' : 'Код или номер (напр: таш, 12, гул...)'}
+                placeholder={language === 'uz' ? 'Bosh harf yoki raqam (masalan: tash, 12, gul...)' : 'Код или номер (напр: таш, 12, гул...)'}
                 className="w-full pl-3.5 pr-8 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 autoComplete="off"
               />
@@ -659,7 +659,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
           <div className="text-center py-8 text-slate-500 border border-dashed border-[#2e3347] rounded-xl bg-[#191b26]/50">
             <Barcode className="w-8 h-8 mx-auto text-slate-600 mb-1" />
             <p className="text-xs font-bold text-slate-400">
-              {language === 'uz' ? 'Hozircha tovar yo\'q. 4-maydonga shtrix-kodni skanerlang.' : 'Штрихкоды товаров пока не отсканированы.'}
+              {language === 'uz' ? 'Hozircha tovar yo\'q. 3-maydonga shtrix-kodni skanerlang.' : 'Штрихкоды товаров пока не отсканированы.'}
             </p>
           </div>
         ) : (
@@ -749,7 +749,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs font-black uppercase text-indigo-400 flex items-center space-x-1.5">
                 <Package className="w-4 h-4 text-indigo-400" />
-                <span>{language === 'uz' ? '📦 Qayta joylangan Korup (Куда переложен)' : '📦 Куда переложен (Новый короб)'}</span>
+                <span>{language === 'uz' ? '📦 Qayta joylangan Korup' : '📦 Куда переложен (Новый короб)'}</span>
                 <span className="text-rose-400 font-black text-sm">*</span>
               </label>
               <div className="flex items-center space-x-2">
@@ -810,7 +810,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                       soundManager.playErrorSound();
                       alert(
                         language === 'uz'
-                          ? '❌ Qayta joylangan korup (Куда переложен) faqat 80 yoki 85 bilan boshlanishi shart! Boshqa raqam qabul qilinmaydi.'
+                          ? '❌ Qayta joylangan korup faqat 80 yoki 85 bilan boshlanishi shart! Boshqa raqam qabul qilinmaydi.'
                           : '❌ Короб «Куда переложен» должен начинаться только с 80 или 85! Другие номера не принимаются.'
                       );
                       setTargetBox('');
@@ -881,11 +881,11 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             ) : !targetBox.trim() && items.length > 0 ? (
               <span>
                 {language === 'uz'
-                  ? '«Куда переложен» (80 yoki 85) maydonini to\'ldiring'
+                  ? '«Qayta joylangan korup» (80 yoki 85) maydonini to\'ldiring'
                   : 'Укажите «Куда переложен» (80 или 85) для завершения'}
               </span>
             ) : (
-              <span>{language === 'uz' ? 'Завершить' : 'Завершить'}</span>
+              <span>{language === 'uz' ? 'Yakunlash' : 'Завершить'}</span>
             )}
           </button>
         </div>
