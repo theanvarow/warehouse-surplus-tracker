@@ -92,11 +92,12 @@ Monitoring bo'limi real vaqtda ombordagi barcha fiksatsiyalar statistikasini ko'
 ![05_monitoring_dashboard](./screenshots/05_monitoring_dashboard.png)
 
 ### Imkoniyatlari:
+* **Xodimlar samaradorligi (Kim qancha qilyapti):** Har bir xodim bo'yicha skanerlangan tovarlar soni, yopilgan koruplar, o'rtacha ko'rsatkich, umumiy ulush (%) va oxirgi faollik vaqti (🥇 1, 🥈 2, 🥉 3 o'rinlar bilan).
+* **Davr filtrlari:** «☀️ Bugun» yoki «📅 Barcha vaqt» bo'yicha ko'rish va xodim FIO yoki stol raqami bo'yicha tezkor qidirish.
 * **Bugungi tovarlar soni:** Bugun fiksatsiya qilingan jami tovarlar miqdori.
 * **Bugungi qutilar soni:** Qayta ishlangan qutilar soni.
 * **Top PVZ lar reytingi:** Eng ko'p muammoli tovar chiqqan punktlar (masalan, `FrШЕР-3`, `ТАШ-63`...).
 * **Top sabablar statistikasi:** Qaysi sabab bo'yicha ko'p tovar tushayotgani (foizlarda).
-* **Real vaqt jadvali:** Har bir xodim va stol bo'yicha barcha yozuvlar ro'yxati.
 
 ### Xavfsizlik:
 * Monitoring oynasiga kirish uchun maxsus parol o'rnatilgan: **`Sardor 12345`**.

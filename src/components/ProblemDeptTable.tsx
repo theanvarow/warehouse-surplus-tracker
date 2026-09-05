@@ -10,12 +10,17 @@ import {
   RotateCcw,
   CheckCircle2,
   Lock,
-  Unlock,
   KeyRound,
   Eye,
   EyeOff,
-  ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  Users,
+  Award,
+  TrendingUp,
+  Search,
+  Clock,
+  Sparkles,
+  Calendar
 } from 'lucide-react';
 
 interface ProblemDeptTableProps {
@@ -38,6 +43,10 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
   const [passwordError, setPasswordError] = useState<string>('');
   const passwordInputRef = useRef<HTMLInputElement>(null);
 
+  // Monitoring filtrlari
+  const [periodFilter, setPeriodFilter] = useState<'today' | 'all'>('today');
+  const [employeeSearch, setEmployeeSearch] = useState<string>('');
+
   useEffect(() => {
     if (!isUnlocked) {
       passwordInputRef.current?.focus();
@@ -54,7 +63,6 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
         setIsUnlocked(false);
         setPassword('');
         setPasswordError('');
-        console.log('🔒 Harakatsizlik sababli Monitoring avtomatik qulflandi.');
       }, 120000);
     };
 
@@ -119,28 +127,91 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
     return `${y}-${m}-${day}`;
   }, []);
 
-  // Faqat bugungi fiksatsiyalar
-  const todayItems = useMemo(() => {
+  // Tanlangan davr bo'yicha tovarlar
+  const displayedItems = useMemo(() => {
+    if (periodFilter === 'all') return items;
     return items.filter((item) => {
       const itemDate = item.timestamp ? item.timestamp.slice(0, 10) : '';
       return itemDate === todayStr;
     });
-  }, [items, todayStr]);
+  }, [items, periodFilter, todayStr]);
 
-  // Bugungi jami fiksatsiya qilingan tovarlar soni
-  const todayTotalCount = useMemo(() => {
-    return todayItems.reduce((sum, i) => sum + (i.count || 1), 0);
-  }, [todayItems]);
+  // Jami tovarlar soni
+  const totalCount = useMemo(() => {
+    return displayedItems.reduce((sum, i) => sum + (i.count || 1), 0);
+  }, [displayedItems]);
 
-  // Bugungi unikal koruplar soni
-  const todayTotalBoxes = useMemo(() => {
-    return new Set(todayItems.map((i) => i.boxNumber)).size;
-  }, [todayItems]);
+  // Unikal koruplar soni
+  const totalBoxes = useMemo(() => {
+    return new Set(displayedItems.map((i) => i.boxNumber)).size;
+  }, [displayedItems]);
 
-  // Qaysi PVZ dan ko'proq (Bugungi reyting)
+  // 👥 XODIMLAR BO'YICHA SAMARADORLIK (Kim qancha qilyapti)
+  const employeeStats = useMemo(() => {
+    const map: Record<string, {
+      operator: string;
+      itemsCount: number;
+      boxes: Set<string>;
+      tables: Set<string>;
+      shifts: Set<string>;
+      lastTimestamp: string;
+    }> = {};
+
+    displayedItems.forEach((item) => {
+      const name = (item.operator && item.operator.trim())
+        ? item.operator.trim()
+        : (language === 'uz' ? 'Noma\'lum xodim' : 'Неизвестный сотрудник');
+
+      if (!map[name]) {
+        map[name] = {
+          operator: name,
+          itemsCount: 0,
+          boxes: new Set<string>(),
+          tables: new Set<string>(),
+          shifts: new Set<string>(),
+          lastTimestamp: item.timestamp || '',
+        };
+      }
+      map[name].itemsCount += (item.count || 1);
+      if (item.boxNumber && item.boxNumber !== '—') map[name].boxes.add(item.boxNumber);
+      if (item.tableNumber && item.tableNumber !== '—') map[name].tables.add(item.tableNumber);
+      if (item.shift) map[name].shifts.add(String(item.shift));
+      if (item.timestamp && (!map[name].lastTimestamp || item.timestamp > map[name].lastTimestamp)) {
+        map[name].lastTimestamp = item.timestamp;
+      }
+    });
+
+    return Object.values(map)
+      .map((op) => ({
+        operator: op.operator,
+        itemsCount: op.itemsCount,
+        boxesCount: op.boxes.size,
+        tables: Array.from(op.tables).filter((t) => t && t !== '—'),
+        shifts: Array.from(op.shifts),
+        lastTimestamp: op.lastTimestamp,
+        avgPerBox: op.boxes.size > 0 ? (op.itemsCount / op.boxes.size).toFixed(1) : op.itemsCount.toString(),
+        percent: totalCount > 0 ? Math.round((op.itemsCount / totalCount) * 100) : 0,
+      }))
+      .sort((a, b) => b.itemsCount - a.itemsCount);
+  }, [displayedItems, totalCount, language]);
+
+  // Qidiruv bo'yicha filtrlangan xodimlar
+  const filteredEmployees = useMemo(() => {
+    if (!employeeSearch.trim()) return employeeStats;
+    const q = employeeSearch.toLowerCase().trim();
+    return employeeStats.filter(
+      (e) =>
+        e.operator.toLowerCase().includes(q) ||
+        e.tables.some((t) => t.toLowerCase().includes(q))
+    );
+  }, [employeeStats, employeeSearch]);
+
+  const topPerformer = employeeStats.length > 0 ? employeeStats[0] : null;
+
+  // Qaysi PVZ dan ko'proq (Reyting)
   const topPvzList = useMemo(() => {
     const pvzMap: Record<string, number> = {};
-    todayItems.forEach((item) => {
+    displayedItems.forEach((item) => {
       const pvz = (item.pvz && item.pvz !== '—') ? item.pvz.trim() : (language === 'uz' ? 'Noma\'lum PVZ' : 'Без ПВЗ');
       pvzMap[pvz] = (pvzMap[pvz] || 0) + (item.count || 1);
     });
@@ -149,12 +220,12 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
       .map(([pvz, count]) => ({ pvz, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5); // Eng ko'p 5 ta PVZ
-  }, [todayItems, language]);
+  }, [displayedItems, language]);
 
-  // Qaysi Prichina (sabab) bo'yicha ko'proq (Bugungi reyting)
+  // Qaysi Prichina (sabab) bo'yicha ko'proq (Reyting)
   const topReasonsList = useMemo(() => {
     const reasonMap: Record<string, number> = {};
-    todayItems.forEach((item) => {
+    displayedItems.forEach((item) => {
       const r = item.reason || item.note || (language === 'uz' ? 'Boshqa' : 'Другое');
       reasonMap[r] = (reasonMap[r] || 0) + (item.count || 1);
     });
@@ -163,7 +234,7 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
       .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5); // Eng ko'p 5 ta Sabab
-  }, [todayItems, language]);
+  }, [displayedItems, language]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -176,6 +247,55 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
     } finally {
       setTimeout(() => setIsRefreshing(false), 600);
     }
+  };
+
+  const formatActivityTime = (ts: string) => {
+    if (!ts) return '—';
+    if (ts.includes(' ')) {
+      return ts.split(' ')[1];
+    }
+    if (ts.includes('T')) {
+      return ts.split('T')[1]?.slice(0, 8) || ts;
+    }
+    return ts;
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return 'XO';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const getRankBadge = (index: number) => {
+    if (index === 0) {
+      return (
+        <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xs shadow-md shadow-amber-500/30" title="1-o'rin (Lider)">
+          🥇
+        </span>
+      );
+    }
+    if (index === 1) {
+      return (
+        <span className="w-6 h-6 rounded-full bg-slate-300 text-slate-950 flex items-center justify-center font-black text-xs shadow-md shadow-slate-400/20" title="2-o'rin">
+          🥈
+        </span>
+      );
+    }
+    if (index === 2) {
+      return (
+        <span className="w-6 h-6 rounded-full bg-amber-700 text-white flex items-center justify-center font-black text-xs shadow-md shadow-amber-800/30" title="3-o'rin">
+          🥉
+        </span>
+      );
+    }
+    return (
+      <span className="w-6 h-6 rounded-full bg-[#25283a] text-slate-400 border border-[#2e3347] flex items-center justify-center font-bold text-xs">
+        {index + 1}
+      </span>
+    );
   };
 
   // 🔒 AGAR PAROL KIRITILMAGAN BO'LSA — QULF OYNASI
@@ -221,7 +341,7 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -249,19 +369,57 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
 
   return (
     <div className="space-y-5 animate-fade-in text-slate-100">
-      {/* 📊 BUGUNGI KUN ANALITIKASI PANELI */}
-      <div className="bg-[#1f2232] border border-indigo-500/30 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 relative overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#2e3347] pb-3">
-          <div>
-            <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-              <span>{language === 'uz' ? 'Bugungi Kunlik Monitoring' : 'Мониторинг за сегодня'}</span>
-              <span className="text-xs font-mono font-bold text-indigo-400 bg-indigo-950/80 border border-indigo-800/80 px-2 py-0.5 rounded-lg">
-                {todayStr}
-              </span>
-            </h2>
+      {/* 📊 ASOSIY MONITORING PANELI */}
+      <div className="bg-[#1f2232] border border-indigo-500/30 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 relative overflow-hidden">
+        
+        {/* TOP HEADER */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2e3347] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-950/80 border border-indigo-700/80 flex items-center justify-center text-indigo-400 shrink-0">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                <span>{language === 'uz' ? 'Omborxona Monitoringi' : 'Мониторинг склада'}</span>
+                <span className="text-xs font-mono font-bold text-indigo-300 bg-indigo-950/80 border border-indigo-800/80 px-2 py-0.5 rounded-lg">
+                  {periodFilter === 'today' ? todayStr : (language === 'uz' ? 'Barcha vaqt' : 'Все время')}
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400 font-medium">
+                {language === 'uz'
+                  ? 'Xodimlar mehnati, koruplar va tovarlar hisobi'
+                  : 'Показатели сотрудников, выработка и учет коробов'}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Davr tanlash tugmalari: Bugun / Barchasi */}
+            <div className="bg-[#161822] p-1 rounded-xl border border-[#2e3347] flex items-center">
+              <button
+                type="button"
+                onClick={() => setPeriodFilter('today')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  periodFilter === 'today'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {language === 'uz' ? '☀️ Bugun' : '☀️ Сегодня'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodFilter('all')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  periodFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {language === 'uz' ? '📅 Barchasi' : '📅 Все время'}
+              </button>
+            </div>
+
             {onRefresh && (
               <button
                 type="button"
@@ -284,68 +442,340 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
               <Lock className="w-3.5 h-3.5" />
               <span>{language === 'uz' ? 'Qulflash' : 'Заблокировать'}</span>
             </button>
-
-            <span className="text-xs font-bold text-slate-400 pl-1">
-              {todayItems.length} {language === 'uz' ? 'ta qayd' : 'записей'}
-            </span>
           </div>
         </div>
 
-        {/* 1. TOP STATS CARDS: JAMI BUGUN */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 gap-3.5">
-          {/* Bugun fiksatsiya qilingan tovarlar */}
+        {/* 1. TOP STATS CARDS: JAMI KO'RSATKICHLAR (4 CARDS) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Card 1: Tovarlar soni */}
           <div className="bg-[#191b26] border border-[#2e3347] rounded-2xl p-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-400">
-                {language === 'uz' ? 'Bugun fiksatsiya qilingan' : 'Зафиксировано за сегодня'}
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                {language === 'uz' ? 'Fiksatsiya qilingan' : 'Зафиксировано'}
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
-                {todayTotalCount}{' '}
-                <span className="text-xs font-bold text-slate-400">{language === 'uz' ? 'dona tovar' : 'шт.'}</span>
+              <h3 className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+                {totalCount}{' '}
+                <span className="text-xs font-bold text-slate-400">{language === 'uz' ? 'dona' : 'шт.'}</span>
               </h3>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-950/70 border border-emerald-800/80 flex items-center justify-center text-emerald-400">
-              <Layers className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-950/70 border border-emerald-800/80 flex items-center justify-center text-emerald-400 shrink-0">
+              <Layers className="w-5 h-5" />
             </div>
           </div>
 
-          {/* Bugun ochilgan/yopilgan koruplar */}
+          {/* Card 2: Koruplar soni */}
           <div className="bg-[#191b26] border border-[#2e3347] rounded-2xl p-4 flex items-center justify-between">
             <div className="space-y-0.5">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-400">
-                {language === 'uz' ? 'Bugungi koruplar' : 'Коробов за сегодня'}
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                {language === 'uz' ? 'Koruplar' : 'Коробов'}
               </span>
-              <h3 className="text-2xl sm:text-3xl font-black font-mono text-indigo-400">
-                {todayTotalBoxes}{' '}
-                <span className="text-xs font-bold text-slate-400">{language === 'uz' ? 'ta quti' : 'коробов'}</span>
+              <h3 className="text-xl sm:text-2xl font-black font-mono text-indigo-400">
+                {totalBoxes}{' '}
+                <span className="text-xs font-bold text-slate-400">{language === 'uz' ? 'ta quti' : 'кор.'}</span>
               </h3>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-indigo-950/70 border border-indigo-800/80 flex items-center justify-center text-indigo-400">
-              <Package className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-indigo-950/70 border border-indigo-800/80 flex items-center justify-center text-indigo-400 shrink-0">
+              <Package className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Card 3: Faol xodimlar */}
+          <div className="bg-[#191b26] border border-[#2e3347] rounded-2xl p-4 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                {language === 'uz' ? 'Faol xodimlar' : 'Сотрудников'}
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black font-mono text-sky-400">
+                {employeeStats.length}{' '}
+                <span className="text-xs font-bold text-slate-400">{language === 'uz' ? 'nafar' : 'чел.'}</span>
+              </h3>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-sky-950/70 border border-sky-800/80 flex items-center justify-center text-sky-400 shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+          </div>
+
+          {/* Card 4: Eng yuqori ko'rsatkich (Top performer) */}
+          <div className="bg-[#191b26] border border-[#2e3347] rounded-2xl p-4 flex items-center justify-between">
+            <div className="space-y-0.5 min-w-0 pr-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                <span>{language === 'uz' ? 'Eng sermahsul' : 'Лидер смены'}</span>
+              </span>
+              <div className="truncate font-black text-sm sm:text-base text-white">
+                {topPerformer ? topPerformer.operator : '—'}
+              </div>
+              {topPerformer && (
+                <span className="text-[11px] font-mono text-amber-300 font-bold">
+                  {topPerformer.itemsCount} {language === 'uz' ? 'dona' : 'шт.'} ({topPerformer.boxesCount} {language === 'uz' ? 'quti' : 'кор.'})
+                </span>
+              )}
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-amber-950/70 border border-amber-800/80 flex items-center justify-center text-amber-400 shrink-0">
+              <Award className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        {/* 2. ANALITIKA REYTINGLARI: QAYSI PVZ VA QAYSI PRICHINA KO'PROQ */}
+        {/* 2. 👥 XODIMLAR BO'YICHA SAMARADORLIK (Kim qancha qilyapti) */}
+        <div className="bg-[#191b26] border border-[#2e3347] rounded-2xl p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2e3347] pb-3">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-400" />
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                  <span>
+                    {language === 'uz'
+                      ? 'Xodimlar samaradorligi (Kim qancha qilyapti)'
+                      : 'Показатели сотрудников (Рейтинг выработки)'}
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-400 bg-[#25283a] px-2 py-0.5 rounded-md">
+                    {filteredEmployees.length} {language === 'uz' ? 'xodim' : 'сотр.'}
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {language === 'uz'
+                    ? 'Eng ko\'p tovar chiqargan xodimlar bo\'yicha tartiblangan'
+                    : 'Отсортировано по общему количеству зафиксированных товаров'}
+                </p>
+              </div>
+            </div>
+
+            {/* Xodim bo'yicha qidiruv */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+                placeholder={language === 'uz' ? 'Xodim FIO yoki stol...' : 'Поиск по ФИО или столу...'}
+                className="w-full pl-9 pr-3 py-1.5 bg-[#161822] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+              />
+              {employeeSearch && (
+                <button
+                  type="button"
+                  onClick={() => setEmployeeSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {filteredEmployees.length === 0 ? (
+            <div className="py-12 text-center text-slate-500 text-xs sm:text-sm font-bold space-y-1">
+              <Users className="w-8 h-8 mx-auto text-slate-600 mb-1" />
+              <p>
+                {employeeSearch
+                  ? (language === 'uz' ? 'Ushbu qidiruv bo\'yicha xodim topilmadi' : 'Сотрудник по данному запросу не найден')
+                  : (language === 'uz' ? 'Tanlangan davrda xodimlar fiksatsiyalari mavjud emas' : 'В выбранном периоде нет записей сотрудников')}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#2e3347] text-slate-400 uppercase tracking-wider font-black text-[10px]">
+                      <th className="py-2.5 px-3 w-14 text-center">№</th>
+                      <th className="py-2.5 px-3">{language === 'uz' ? 'Xodim (FIO)' : 'Сотрудник (ФИО)'}</th>
+                      <th className="py-2.5 px-3 text-center">{language === 'uz' ? 'Stol raqami' : 'Номер стола'}</th>
+                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'Tovar soni' : 'Товаров'}</th>
+                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'Koruplar' : 'Коробов'}</th>
+                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'O\'rtacha / korup' : 'Ср. на короб'}</th>
+                      <th className="py-2.5 px-4 w-48">{language === 'uz' ? 'Ulushi (Foiz)' : 'Доля в выработке'}</th>
+                      <th className="py-2.5 px-3 text-right">{language === 'uz' ? 'Oxirgi faollik' : 'Посл. запись'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#2e3347]/60">
+                    {filteredEmployees.map((emp, idx) => (
+                      <tr
+                        key={emp.operator}
+                        className={`hover:bg-indigo-950/20 transition-colors ${
+                          idx === 0 ? 'bg-amber-950/10' : ''
+                        }`}
+                      >
+                        {/* 1. O'rin / Rank */}
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex items-center justify-center">
+                            {getRankBadge(idx)}
+                          </div>
+                        </td>
+
+                        {/* 2. Xodim FIO */}
+                        <td className="py-3 px-3 font-bold text-white">
+                          <div className="flex items-center space-x-2.5">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-black text-[10px] shrink-0 ${
+                              idx === 0
+                                ? 'bg-amber-500 text-slate-950 shadow-xs shadow-amber-500/30'
+                                : idx === 1
+                                ? 'bg-slate-300 text-slate-900'
+                                : idx === 2
+                                ? 'bg-amber-800 text-white'
+                                : 'bg-[#25283a] text-indigo-300 border border-indigo-900/60'
+                            }`}>
+                              {getInitials(emp.operator)}
+                            </div>
+                            <span className="truncate max-w-[200px] text-slate-100 font-extrabold">
+                              {emp.operator}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* 3. Stol raqami */}
+                        <td className="py-3 px-3 text-center">
+                          {emp.tables.length > 0 ? (
+                            <div className="flex items-center justify-center gap-1 flex-wrap">
+                              {emp.tables.map((tbl, tIdx) => (
+                                <span
+                                  key={tIdx}
+                                  className="px-2 py-0.5 bg-indigo-950/70 border border-indigo-700/60 rounded-md font-mono text-[11px] font-bold text-indigo-300"
+                                >
+                                  {tbl}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
+                        </td>
+
+                        {/* 4. Tovar soni */}
+                        <td className="py-3 px-3 text-right font-mono font-black text-sm text-emerald-400">
+                          {emp.itemsCount}{' '}
+                          <span className="text-[10px] font-normal text-slate-400">{language === 'uz' ? 'dona' : 'шт.'}</span>
+                        </td>
+
+                        {/* 5. Koruplar soni */}
+                        <td className="py-3 px-3 text-right font-mono font-black text-indigo-300">
+                          {emp.boxesCount}{' '}
+                          <span className="text-[10px] font-normal text-slate-400">{language === 'uz' ? 'ta' : 'кор.'}</span>
+                        </td>
+
+                        {/* 6. O'rtacha / korup */}
+                        <td className="py-3 px-3 text-right font-mono text-slate-300 font-bold">
+                          {emp.avgPerBox}
+                        </td>
+
+                        {/* 7. Ulush va progress bar */}
+                        <td className="py-3 px-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[11px] font-bold">
+                              <span className="text-slate-400">{emp.percent}%</span>
+                            </div>
+                            <div className="w-full bg-[#25283a] h-2 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  idx === 0
+                                    ? 'bg-gradient-to-r from-amber-500 to-emerald-400'
+                                    : 'bg-indigo-500'
+                                }`}
+                                style={{ width: `${Math.max(emp.percent, 3)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 8. Oxirgi faollik */}
+                        <td className="py-3 px-3 text-right font-mono text-[11px] text-slate-400">
+                          <div className="flex items-center justify-end space-x-1">
+                            <Clock className="w-3 h-3 text-slate-500" />
+                            <span>{formatActivityTime(emp.lastTimestamp)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* MOBILE CARDS VIEW */}
+              <div className="block md:hidden space-y-2.5">
+                {filteredEmployees.map((emp, idx) => (
+                  <div
+                    key={emp.operator}
+                    className={`p-3.5 rounded-2xl bg-[#161822] border border-[#2e3347] space-y-2.5 ${
+                      idx === 0 ? 'border-amber-500/40 bg-amber-950/10' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {getRankBadge(idx)}
+                        <span className="font-extrabold text-sm text-white truncate max-w-[180px]">
+                          {emp.operator}
+                        </span>
+                      </div>
+                      {emp.tables.length > 0 && (
+                        <span className="px-2 py-0.5 bg-indigo-950/80 border border-indigo-700/60 rounded-md font-mono text-[10px] font-bold text-indigo-300">
+                          {emp.tables.join(', ')}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-[#191b26] p-2 rounded-xl border border-[#2e3347]/60">
+                        <span className="text-[10px] text-slate-400 block uppercase font-bold">
+                          {language === 'uz' ? 'Tovarlar' : 'Товаров'}
+                        </span>
+                        <span className="font-mono font-black text-emerald-400 text-sm">
+                          {emp.itemsCount} {language === 'uz' ? 'dona' : 'шт.'}
+                        </span>
+                      </div>
+                      <div className="bg-[#191b26] p-2 rounded-xl border border-[#2e3347]/60">
+                        <span className="text-[10px] text-slate-400 block uppercase font-bold">
+                          {language === 'uz' ? 'Koruplar' : 'Коробов'}
+                        </span>
+                        <span className="font-mono font-black text-indigo-300 text-sm">
+                          {emp.boxesCount} {language === 'uz' ? 'ta' : 'кор.'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] font-bold">
+                        <span className="text-slate-400">{language === 'uz' ? 'Umumiy ulush' : 'Доля в выработке'}:</span>
+                        <span className="text-indigo-300 font-mono">{emp.percent}%</span>
+                      </div>
+                      <div className="w-full bg-[#25283a] h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-indigo-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.max(emp.percent, 3)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* 3. ANALITIKA REYTINGLARI: QAYSI PVZ VA QAYSI PRICHINA KO'PROQ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
           {/* A. Qaysi PVZ dan ko'proq */}
           <div className="bg-[#191b26] border border-[#2e3347] rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-indigo-400" />
-                <span>{language === 'uz' ? 'Qaysi PVZ dan ko\'proq (Bugun)' : 'Топ ПВЗ по проблемным товарам (Сегодня)'}</span>
+                <span>
+                  {language === 'uz'
+                    ? `Qaysi PVZ dan ko'proq (${periodFilter === 'today' ? 'Bugun' : 'Barchasi'})`
+                    : `Топ ПВЗ (${periodFilter === 'today' ? 'Сегодня' : 'Все время'})`}
+                </span>
               </span>
               <span className="text-[11px] font-bold text-slate-500">{language === 'uz' ? 'Top 5' : 'Топ 5'}</span>
             </div>
 
             {topPvzList.length === 0 ? (
               <div className="py-6 text-center text-slate-500 text-xs font-bold">
-                {language === 'uz' ? 'Bugun hali fiksatsiya qilinmagan' : 'Сегодня записей пока нет'}
+                {language === 'uz' ? 'Hozircha fiksatsiyalar mavjud emas' : 'Записей пока нет'}
               </div>
             ) : (
               <div className="space-y-2">
                 {topPvzList.map((item, idx) => {
-                  const percent = todayTotalCount > 0 ? Math.round((item.count / todayTotalCount) * 100) : 0;
+                  const percent = totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0;
                   return (
                     <div key={item.pvz} className="space-y-1">
                       <div className="flex items-center justify-between text-xs font-bold">
@@ -381,19 +811,23 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                <span>{language === 'uz' ? 'Qaysi sabab ko\'proq (Bugun)' : 'Топ причин фиксации (Сегодня)'}</span>
+                <span>
+                  {language === 'uz'
+                    ? `Qaysi sabab ko'proq (${periodFilter === 'today' ? 'Bugun' : 'Barchasi'})`
+                    : `Топ причин фиксации (${periodFilter === 'today' ? 'Сегодня' : 'Все время'})`}
+                </span>
               </span>
               <span className="text-[11px] font-bold text-slate-500">{language === 'uz' ? 'Top 5' : 'Топ 5'}</span>
             </div>
 
             {topReasonsList.length === 0 ? (
               <div className="py-6 text-center text-slate-500 text-xs font-bold">
-                {language === 'uz' ? 'Bugun hali fiksatsiya qilinmagan' : 'Сегодня записей пока нет'}
+                {language === 'uz' ? 'Hozircha fiksatsiyalar mavjud emas' : 'Записей пока нет'}
               </div>
             ) : (
               <div className="space-y-2">
                 {topReasonsList.map((item, idx) => {
-                  const percent = todayTotalCount > 0 ? Math.round((item.count / todayTotalCount) * 100) : 0;
+                  const percent = totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0;
                   return (
                     <div key={item.reason} className="space-y-1">
                       <div className="flex items-center justify-between text-xs font-bold">
