@@ -45,7 +45,7 @@ Skanerlash oynasi operatsiyalarni eng tez va xatosiz bajarish uchun optimallasht
 4. **4. Sababni tanlang:**  
    Muammo turiga mos sababni bosing. Tovar pastdagi ro'yxatga qo'shiladi.
 5. **5. Qayta joylangan korup (Куда переложен):**  
-   Muammoli tovar qaysi yangi qutiga solingan bo'lsa, o'sha quti shtrix-kodini skanerlang.
+   Muammoli tovar qaysi qutiga solingan bo'lsa, o'sha quti shtrix-kodini skanerlang. Tizim faqat **80** yoki **85** bilan boshlanadigan koruplarni qabul qiladi (masalan: `80-002` yoki `85-001`). Boshqa raqam qabul qilinmaydi.
 6. **6. Qutini yakunlash (Завершить):**  
    Katta **Завершить** tugmasini bosing. Barcha ma'lumotlar Google Sheets jadvaliga bir zumda yuklanadi.
 
