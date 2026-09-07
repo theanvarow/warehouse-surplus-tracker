@@ -263,7 +263,7 @@ export const translations = {
     colOperator: 'Сотрудник',
     colBox: 'Из какого Грузоместа №',
     colTargetBox: 'Куда переложен',
-    targetBoxLabel: 'Куда переложен (Новый короб)',
+    targetBoxLabel: 'Куда переложен',
     targetBoxPlaceholder: 'Только 80-... (напр: 80-002)',
     colBarcode: 'Штрихкод Товара',
     colReason: 'Причина',

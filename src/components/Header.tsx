@@ -99,9 +99,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-[#1f2232]/95 backdrop-blur-md border-b border-[#2e3347] text-slate-100 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
         {/* Left: Official Uzum Logo & Compact Title */}
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2.5 shrink-0">
           <div className="w-10 h-10 rounded-2xl bg-[#7000FF] flex items-center justify-center shadow-lg shadow-purple-600/40 text-white shrink-0">
             <svg viewBox="0 0 100 100" className="w-6 h-6 fill-current">
               {/* Official Uzum 'U' symbol with inner vertical cut */}
@@ -121,31 +121,31 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-base font-black tracking-tight text-white">
+              <span className="text-base font-black tracking-tight text-white whitespace-nowrap">
                 Возвратный поток <span className="font-extrabold text-white">пересчёт</span>
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-bold leading-none mt-0.5 hidden sm:block">
+            <p className="text-[11px] text-slate-400 font-bold leading-none mt-0.5 hidden sm:block whitespace-nowrap">
               Фиксация проблемных товаров
             </p>
           </div>
         </div>
 
-        {/* Center: Compact Navigation Tabs */}
-        <nav className="flex items-center space-x-1 bg-[#191b26] p-1 rounded-xl border border-[#2e3347]">
+        {/* Center: Compact Navigation Tabs with fixed width to prevent shifting */}
+        <nav className="flex items-center space-x-1 bg-[#191b26] p-1 rounded-xl border border-[#2e3347] shrink-0">
           <button
             onClick={() => {
               setCurrentTab('scanner');
               soundManager.playItemScanSound();
             }}
-            className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all cursor-pointer ${
+            className={`flex items-center justify-center space-x-1.5 px-3.5 py-1.5 w-[135px] rounded-lg text-xs sm:text-sm font-black transition-all cursor-pointer shrink-0 ${
               currentTab === 'scanner'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-[#25283a]'
             }`}
           >
-            <Barcode className="w-4 h-4" />
-            <span>{t.scannerMode}</span>
+            <Barcode className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">{t.scannerMode}</span>
           </button>
 
           <button
@@ -153,43 +153,43 @@ export const Header: React.FC<HeaderProps> = ({
               setCurrentTab('dashboard');
               soundManager.playItemScanSound();
             }}
-            className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-black transition-all cursor-pointer ${
+            className={`flex items-center justify-center space-x-1.5 px-3.5 py-1.5 w-[135px] rounded-lg text-xs sm:text-sm font-black transition-all cursor-pointer shrink-0 ${
               currentTab === 'dashboard'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-[#25283a]'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>{t.dashboard}</span>
+            <LayoutDashboard className="w-4 h-4 shrink-0" />
+            <span className="whitespace-nowrap">{t.dashboard}</span>
           </button>
         </nav>
 
         {/* Right: User, PVZ, Controls (Compact) */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 shrink-0">
           {/* Active PVZ badge */}
           {currentPvz && (
             <button
               onClick={onChangePvz}
               title={t.changePvzBtn}
-              className="hidden lg:flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-800/80 text-indigo-300 text-xs font-bold transition-all cursor-pointer"
+              className="hidden lg:flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-800/80 text-indigo-300 text-xs font-bold transition-all cursor-pointer shrink-0"
             >
-              <MapPin className="w-3.5 h-3.5 text-indigo-400" />
+              <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
               <span className="max-w-[130px] truncate">{currentPvz}</span>
             </button>
           )}
 
           {/* User Session Pill & Shift Button */}
           {userSession ? (
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-[#191b26] border border-[#2e3347] text-xs font-bold shadow-sm">
-                <div className="flex items-center space-x-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-                  <User className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center space-x-2 shrink-0">
+              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-[#191b26] border border-[#2e3347] text-xs font-bold shadow-sm shrink-0">
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50 shrink-0" />
+                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   <span className="font-extrabold text-slate-200 max-w-[110px] truncate">
                     {userSession.employeeName}
                   </span>
                   {userSession.tableNumber && (
-                    <span className="px-1.5 py-0.5 rounded bg-[#161822] border border-[#2e3347] font-mono text-[10px] font-black text-indigo-300">
+                    <span className="px-1.5 py-0.5 rounded bg-[#161822] border border-[#2e3347] font-mono text-[10px] font-black text-indigo-300 shrink-0">
                       {userSession.tableNumber}
                     </span>
                   )}
@@ -201,21 +201,21 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={onChangeShift}
                   title={language === 'uz' ? 'Smenani almashtirish' : 'Сменить смену'}
-                  className="flex items-center space-x-1.5 text-indigo-400 hover:text-indigo-300 bg-indigo-950/70 hover:bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-800/60 transition-colors cursor-pointer"
+                  className="flex items-center space-x-1.5 text-indigo-400 hover:text-indigo-300 bg-indigo-950/70 hover:bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-800/60 transition-colors cursor-pointer shrink-0"
                 >
-                  <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                  <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                   <span className="font-mono font-black">{userSession.shift}</span>
                 </button>
               </div>
 
-              {/* Prominent, Clearly Visible Logout Button */}
+              {/* Prominent, Clearly Visible Logout Button with fixed width to prevent shifting */}
               <button
                 onClick={onLogout}
                 title={language === 'uz' ? 'Akkountdan chiqish' : 'Выйти из аккаунта'}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-950/50 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-800/80 hover:border-rose-500 text-xs font-black transition-all cursor-pointer shadow-sm active:scale-95 group"
+                className="flex items-center justify-center space-x-1.5 px-3 py-1.5 w-[88px] rounded-xl bg-rose-950/50 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-800/80 hover:border-rose-500 text-xs font-black transition-all cursor-pointer shadow-sm active:scale-95 group shrink-0"
               >
-                <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform text-rose-400 group-hover:text-white" />
-                <span className="hidden sm:inline">{language === 'uz' ? 'Chiqish' : 'Выход'}</span>
+                <LogOut className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform text-rose-400 group-hover:text-white shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">{language === 'uz' ? 'Chiqish' : 'Выход'}</span>
               </button>
             </div>
           ) : null}
@@ -261,7 +261,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Language Switcher Button Group */}
-          <div className="flex items-center bg-[#191b26] border border-[#2e3347] rounded-lg p-0.5">
+          <div className="flex items-center bg-[#191b26] border border-[#2e3347] rounded-lg p-0.5 shrink-0">
             <button
               onClick={() => toggleLanguage('uz')}
               className={`px-2 py-0.5 text-[11px] font-black rounded transition-all cursor-pointer ${

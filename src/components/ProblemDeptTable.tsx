@@ -394,12 +394,12 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
           </div>
 
           <div className="flex items-center flex-wrap gap-2">
-            {/* Davr tanlash tugmalari: Bugun / Barchasi */}
-            <div className="bg-[#161822] p-1 rounded-xl border border-[#2e3347] flex items-center">
+            {/* Period Switcher (Bugun / Barchasi) */}
+            <div className="flex items-center bg-[#191b26] p-1 rounded-xl border border-[#2e3347] shrink-0">
               <button
                 type="button"
                 onClick={() => setPeriodFilter('today')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`w-[85px] justify-center text-center px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   periodFilter === 'today'
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -410,7 +410,7 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
               <button
                 type="button"
                 onClick={() => setPeriodFilter('all')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`w-[95px] justify-center text-center px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                   periodFilter === 'all'
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -426,9 +426,9 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
                 onClick={handleManualRefresh}
                 disabled={isRefreshing}
                 title={language === 'uz' ? 'Google Sheets dan ma\'lumotlarni yangilash' : 'Обновить данные из Google Sheets'}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-300 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                className="w-[100px] justify-center flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/80 text-indigo-300 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 shrink-0 whitespace-nowrap"
               >
-                <RotateCcw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
+                <RotateCcw className={`w-3.5 h-3.5 shrink-0 ${isRefreshing ? 'animate-spin text-indigo-400' : ''}`} />
                 <span>{language === 'uz' ? 'Yangilash' : 'Обновить'}</span>
               </button>
             )}
@@ -437,9 +437,9 @@ export const ProblemDeptTable: React.FC<ProblemDeptTableProps> = ({
               type="button"
               onClick={handleLock}
               title={language === 'uz' ? 'Monitoringni qulflash' : 'Заблокировать мониторинг'}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-950/50 hover:bg-rose-900/80 border border-rose-800/80 text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95"
+              className="w-[125px] justify-center flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-950/50 hover:bg-rose-900/80 border border-rose-800/80 text-rose-300 text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 whitespace-nowrap"
             >
-              <Lock className="w-3.5 h-3.5" />
+              <Lock className="w-3.5 h-3.5 shrink-0" />
               <span>{language === 'uz' ? 'Qulflash' : 'Заблокировать'}</span>
             </button>
           </div>

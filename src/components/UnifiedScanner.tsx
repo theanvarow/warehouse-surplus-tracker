@@ -456,16 +456,16 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       {/* COMPACT & CLEAN MASTER CARD (Korup, PVZ, Tovar Barcode) */}
       <div className="bg-[#1f2232] border border-[#2e3347] rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
         {/* Top Header Row with Clear/Reset button */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#2e3347]">
-          <div className="flex items-center space-x-2">
-            <span className="text-base font-black text-white">
-              {language === 'uz' ? '📦 Skanerlash Maydoni' : '📦 Рабочая Область Сканирования'}
+        <div className="flex items-center justify-between pb-3 border-b border-[#2e3347] gap-2">
+          <div className="flex items-center space-x-2 shrink-0">
+            <span className="text-base font-black text-white whitespace-nowrap">
+              {language === 'uz' ? '📦 Skanerlash maydoni' : '📦 Зона сканирования'}
             </span>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 shrink-0">
             {/* Quick Stats */}
-            <span className="text-xs font-bold text-slate-300 bg-[#191b26] px-3 py-1 rounded-xl border border-[#2e3347]">
+            <span className="text-xs font-bold text-slate-300 bg-[#191b26] px-3 py-1 rounded-xl border border-[#2e3347] whitespace-nowrap shrink-0">
               {items.length} {language === 'uz' ? 'xil' : 'видов'} &bull; <strong className="text-emerald-400 font-mono text-sm">{totalQuantity}</strong> {language === 'uz' ? 'dona' : 'шт.'}
             </span>
 
@@ -473,10 +473,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               <button
                 type="button"
                 onClick={handleResetForm}
-                className="text-xs font-bold text-slate-400 hover:text-rose-400 flex items-center space-x-1 px-2.5 py-1 rounded-lg hover:bg-rose-950/40 transition-colors cursor-pointer"
+                className="w-[88px] justify-center text-xs font-bold text-slate-400 hover:text-rose-400 flex items-center space-x-1 px-2.5 py-1 rounded-lg hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
                 title={language === 'uz' ? 'Maydonlarni tozalash' : 'Очистить поля'}
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5 shrink-0" />
                 <span>{language === 'uz' ? 'Tozalash' : 'Сброс'}</span>
               </button>
             )}
@@ -484,13 +484,15 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
         </div>
 
         {/* 3 Simple, Compact Inputs in 1 Clean Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-start">
           {/* FIELD 1: GRUZAMESTA RAQAMI (Qaysi Gruzamestadan chiqdi) */}
           <div className="space-y-1">
-            <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
-              <Package className="w-3.5 h-3.5 text-indigo-400" />
-              <span>1. {language === 'uz' ? 'Qaysi Gruzamestadan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
-            </label>
+            <div className="h-5 flex items-center">
+              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 truncate">
+                <Package className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="truncate">1. {language === 'uz' ? 'Qaysi Gruzamestadan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
+              </label>
+            </div>
             <input
               ref={boxRef}
               type="text"
@@ -536,10 +538,12 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
           {/* FIELD 2: PVZ INPUT WITH SMART AUTOCOMPLETE */}
           <div ref={pvzContainerRef} className="space-y-1 relative">
-            <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
-              <MapPin className="w-3.5 h-3.5 text-indigo-400" />
-              <span>2. {language === 'uz' ? 'PVZ' : 'ПВЗ'}</span>
-            </label>
+            <div className="h-5 flex items-center">
+              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 truncate">
+                <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="truncate">2. {language === 'uz' ? 'PVZ' : 'ПВЗ'}</span>
+              </label>
+            </div>
 
             <div className="relative">
               <input
@@ -618,13 +622,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
           {/* FIELD 3: TOVAR SHTRIX-KODI */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1">
-                <Barcode className="w-3.5 h-3.5 text-indigo-400" />
-                <span>3. {language === 'uz' ? 'Tovar Barcode' : 'Штрих-код'}</span>
+            <div className="h-5 flex items-center justify-between">
+              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 truncate">
+                <Barcode className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="truncate">3. {language === 'uz' ? 'Tovar Barcode' : 'Штрих-код'}</span>
               </label>
               {lastScannedBarcode && (
-                <span className="text-[11px] font-mono font-bold text-emerald-400">
+                <span className="text-[11px] font-mono font-bold text-emerald-400 truncate ml-1">
                   {lastScannedBarcode}
                 </span>
               )}
@@ -637,15 +641,15 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value)}
                 placeholder={language === 'uz' ? 'Skanerlang...' : 'Сканируйте...'}
-                className="w-full pl-3.5 pr-20 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-sm sm:text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                className="w-full pl-3.5 pr-22 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-sm sm:text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                 autoComplete="off"
               />
               <button
                 type="submit"
-                className="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center space-x-1 cursor-pointer"
+                className="absolute right-1.5 top-1.5 bottom-1.5 w-20 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center space-x-1 cursor-pointer shrink-0"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{language === 'uz' ? 'Qo\'shish' : 'Ввод'}</span>
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{language === 'uz' ? 'Qo\'shish' : 'Ввод'}</span>
               </button>
             </form>
           </div>
@@ -762,13 +766,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               ? 'border-amber-500/70 shadow-sm shadow-amber-500/10'
               : 'border-indigo-500/40'
           }`}>
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-black uppercase text-indigo-400 flex items-center space-x-1.5">
-                <Package className="w-4 h-4 text-indigo-400" />
-                <span>{language === 'uz' ? '📦 Qayta joylangan Korup' : '📦 Куда переложен (Новый короб)'}</span>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-black uppercase text-indigo-400 flex items-center space-x-1.5 shrink-0">
+                <Package className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="whitespace-nowrap">{language === 'uz' ? '📦 Qayta joylangan Korup' : '📦 Куда переложен'}</span>
                 <span className="text-rose-400 font-black text-sm">*</span>
               </label>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 shrink-0">
                 {boxNumber.trim() && (
                   <button
                     type="button"
@@ -785,13 +789,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                       }
                       setTargetBox(cleanCurrentBox);
                     }}
-                    className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 transition-all flex items-center space-x-1 cursor-pointer active:scale-95 shadow-sm"
+                    className="w-[140px] text-[11px] font-bold px-2 py-1 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 transition-all flex items-center justify-center space-x-1 cursor-pointer active:scale-95 shadow-sm shrink-0 whitespace-nowrap"
                     title={language === 'uz' ? 'Tovar yangi korupga o\'tkazilmagan bo\'lsa, shu korup raqamini qo\'yish' : 'Если товар остался в том же коробе'}
                   >
                     <span>🔄 {language === 'uz' ? 'Shu korupning o\'zi' : 'В тот же короб'}</span>
                   </button>
                 )}
-                <span className={`text-[11px] font-bold ${
+                <span className={`text-[11px] font-bold shrink-0 min-w-[85px] text-right whitespace-nowrap ${
                   isTargetBoxInvalid
                     ? 'text-rose-400'
                     : isTargetBoxValid
