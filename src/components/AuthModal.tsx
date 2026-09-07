@@ -387,7 +387,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
                 <span>{t.scanBadgePrompt}</span>
               </label>
 
-              {isNameScanned && (
+              {isNameScanned ? (
                 <button
                   type="button"
                   onClick={handleResetBadge}
@@ -397,6 +397,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
                   <RotateCcw className="w-3 h-3" />
                   <span>{t.rescanBtn}</span>
                 </button>
+              ) : (
+                <div className="flex items-center gap-1 text-indigo-400 text-[11px] font-semibold">
+                  <Zap className="w-3.5 h-3.5 animate-bounce-subtle" />
+                  <span>{t.waitingForScan}</span>
+                </div>
               )}
             </div>
 
@@ -433,16 +438,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
                     triggerManualError();
                   }}
                   placeholder={t.scanBadgePlaceholder}
-                  className="w-full pl-11 pr-28 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-400 text-sm sm:text-base font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner cursor-default select-none"
+                  className="w-full pl-11 pr-4 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner cursor-default select-none"
                   autoComplete="off"
                   autoFocus
                 />
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                   <QrCode className="w-5 h-5 text-indigo-400 animate-pulse" />
-                </div>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-indigo-400 text-xs font-semibold pointer-events-none">
-                  <Zap className="w-3.5 h-3.5 animate-bounce-subtle" />
-                  <span className="text-[11px]">{t.waitingForScan}</span>
                 </div>
               </div>
             )}
@@ -477,7 +478,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
                 <span>{t.scanTablePrompt}</span>
               </label>
 
-              {isTableScanned && (
+              {isTableScanned ? (
                 <button
                   type="button"
                   onClick={handleResetTable}
@@ -487,7 +488,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
                   <RotateCcw className="w-3 h-3" />
                   <span>{t.rescanBtn}</span>
                 </button>
-              )}
+              ) : isNameScanned ? (
+                <div className="flex items-center gap-1 text-indigo-400 text-[11px] font-semibold">
+                  <Zap className="w-3.5 h-3.5 animate-bounce-subtle" />
+                  <span>{t.waitingForScan}</span>
+                </div>
+              ) : null}
             </div>
 
             {isTableScanned ? (
@@ -528,18 +534,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
                       ? 'Avval xodimni skanerlang...'
                       : 'Сначала сканируйте сотрудника...'
                   }
-                  className="w-full pl-11 pr-28 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-white placeholder-slate-400 text-sm sm:text-base font-mono font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner uppercase cursor-default select-none"
+                  className="w-full pl-11 pr-4 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-white placeholder-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner cursor-default select-none"
                   autoComplete="off"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                   <Barcode className="w-5 h-5 text-indigo-400" />
                 </div>
-                {isNameScanned && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-indigo-400 text-xs font-semibold pointer-events-none">
-                    <Zap className="w-3.5 h-3.5 animate-bounce-subtle" />
-                    <span className="text-[11px]">{t.waitingForScan}</span>
-                  </div>
-                )}
               </div>
             )}
 
