@@ -20,10 +20,10 @@ Har bir operator o'z ish o'rnini ochish uchun tizimga kirishi kerak:
 
 ![01_auth_modal](./screenshots/01_auth_modal.png)
 
-1. **Xodim F.I.O:** Ism va familiyangizni kiriting (masalan, `Алиев Сардор`).
-2. **Stol Raqami:** Ishlayotgan stolingiz raqamini yozing yoki stol shtrix-kodini skanerlang (masalan, `STOL-04`).
-3. **Smenani tanlang:** `1`, `2`, `3` yoki `4`-smena tugmasini bosing.
-4. **Tizimga kirish:** Tugmani bosib asosiy ish oynasiga o'ting.
+1. **Xodim Beydjigi (QR kod):** Beydjikdagi shaxsiy QR kodni skanerlang (F.I.O avtomatik aniqlanadi). Klaviaturadan qo'lda yozish taqiqlangan!
+2. **Stol Raqami:** Ishlayotgan stolingizdagi shtrix-kod yoki QR kodni skanerlang (masalan, `STOL-04`).
+3. **Smenani tanlang:** Bugungi smenangizni belgilang (`1`, `2`, `3` yoki `4`).
+4. **Avtomatik Kirish:** Ikkala kod skanerlangach, hech qanday tugmani bosmasdan tizim avtomatik ochiladi.
 
 > ⏰ **Eslatma:** Har kuni soat **09:00** va **21:00** da smena almashganda xavfsizlik va yangi smena hisoboti uchun tizim avtomatik ravishda tizimdan chiqaradi.
 
