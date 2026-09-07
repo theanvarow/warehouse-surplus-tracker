@@ -594,18 +594,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         {/* Glowing top ambient light */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-32 bg-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
 
-        {/* Modal Top Bar: Mode Badge & Language Switcher */}
-        <div className="flex items-center justify-between mb-4 relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>{language === 'uz' ? 'Faqat Skaner Rejimi' : 'Только режим сканера'}</span>
-          </div>
-
-          {/* Quick Language Switcher directly inside modal */}
-          {onLanguageChange && (
+        {/* Modal Top Bar: Language Switcher */}
+        {onLanguageChange && (
+          <div className="flex items-center justify-end mb-4 relative z-10">
             <div className="flex items-center bg-[#161824] border border-[#2e3347] rounded-xl p-0.5 shadow-inner">
               <button
                 type="button"
@@ -636,17 +627,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                 RU
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Modal Header */}
         <div className="flex flex-col items-center text-center mb-6 relative">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
             <span>{t.authTitle}</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 font-medium max-w-xs">
-            {t.authSubtitle}
-          </p>
         </div>
 
         {/* Error / Manual Warning Alert with Lockout Countdown */}
