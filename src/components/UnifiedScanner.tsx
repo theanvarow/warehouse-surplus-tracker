@@ -520,18 +520,17 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             <button
               type="button"
               onClick={() => {
-                const val = language === 'uz' ? 'BEZ GRUZAMESTA' : 'БЕЗ ГРУЗОМЕСТА';
-                setBoxNumber(val);
+                setBoxNumber('БЕЗ ГРУЗОМЕСТА');
                 soundManager.playItemScanSound();
                 setTimeout(() => pvzRef.current?.focus(), 60);
               }}
               className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-[0.99] border shadow-sm ${
-                boxNumber === 'BEZ GRUZAMESTA' || boxNumber === 'БЕЗ ГРУЗОМЕСТА'
+                boxNumber === 'БЕЗ ГРУЗОМЕСТА'
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-amber-900/20'
                   : 'bg-[#222536] hover:bg-amber-500/10 text-slate-300 hover:text-amber-300 border-[#2e3347] hover:border-amber-500/40'
               }`}
             >
-              <span>🚫 {language === 'uz' ? 'Gruzamesta yo\'q (Bez gruzamesta)' : 'Без грузоместа'}</span>
+              <span>🚫 Без грузоместа</span>
             </button>
           </div>
 
