@@ -214,19 +214,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
     e: React.KeyboardEvent<HTMLInputElement>,
     target: 'badge' | 'table'
   ) => {
-    // Block Paste (Ctrl+V / Cmd+V)
+    // 1. Block Paste (Ctrl+V / Cmd+V)
     if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
       e.preventDefault();
       triggerManualError();
       return;
     }
 
-    // Allow browser navigation keys
+    // 2. Block holding down keys (Key Repeat on keyboard)
+    if (e.repeat) {
+      e.preventDefault();
+      const bufferRef = target === 'badge' ? nameBufferRef : tableBufferRef;
+      if (bufferRef.current.timer) clearTimeout(bufferRef.current.timer);
+      bufferRef.current = { chars: [], times: [], timer: null };
+      triggerManualError();
+      return;
+    }
+
+    // 3. Allow browser navigation keys
     if (e.key === 'Tab' || e.key === 'Escape') {
       return;
     }
 
-    // STRICT ANTI-MANUAL:
+    // 4. STRICT ANTI-MANUAL:
     // Prevent default on ANY printable or typing key!
     // Hand-typed characters will NEVER be placed into the DOM input field.
     e.preventDefault();
@@ -234,7 +244,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
     const bufferRef = target === 'badge' ? nameBufferRef : tableBufferRef;
     const now = Date.now();
 
-    // Skaner Enter tugmasi bilan yakunlaganda
+    // 5. Skaner Enter tugmasi bilan yakunlaganda (Hardware Scanner Enter Suffix)
     if (e.key === 'Enter') {
       if (bufferRef.current.timer) {
         clearTimeout(bufferRef.current.timer);
@@ -245,20 +255,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
       const times = [...bufferRef.current.times];
       bufferRef.current = { chars: [], times: [], timer: null };
 
-      // Skaner kamida 1-2 belgini o'ta tez (< 55ms interval) yuborishi kerak
-      const minLen = target === 'badge' ? 2 : 1;
+      // Skaner kamida 2-3 belgidan iborat bo'lishi shart
+      const minLen = target === 'badge' ? 3 : 2;
       if (chars.length < minLen) {
         triggerManualError();
         return;
       }
 
-      // Tezlik tahlili (Hardware scanner velocity check)
+      // Bir xil harflarni ushlab turishni rad etish (masalan: 'aaaaaa')
+      const uniqueChars = new Set(chars);
+      if (uniqueChars.size < 2 && chars.length > 2) {
+        triggerManualError();
+        return;
+      }
+
+      // Umumiy vaqt tekshiruvi:
+      // Jismoniy skaner butun shtrix-kodni 15ms - 75ms ichida jo'natadi.
+      // Klaviaturada inson qo'li bilan yozish esa kamida 300ms - 2000ms oladi.
+      const totalDuration = times[times.length - 1] - times[0];
+      if (totalDuration > 85) {
+        triggerManualError();
+        return;
+      }
+
+      // Belgilar orasidagi tezlik tekshiruvi:
+      // Skanerda harflar oralig'i < 35ms bo'ladi.
       let isManual = false;
       for (let i = 1; i < times.length; i++) {
-        if (times[i] - times[i - 1] > 55) {
+        if (times[i] - times[i - 1] > 35) {
           isManual = true;
           break;
         }
+      }
+
+      // O'rtacha oraliq tezligi <= 22ms bo'lishi kerak
+      const avgInterval = totalDuration / (times.length - 1);
+      if (avgInterval > 22) {
+        isManual = true;
       }
 
       if (isManual) {
@@ -266,7 +299,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
         return;
       }
 
-      // Qabul qilindi: haqiqiy skaner qurilmasi
+      // Faqat haqiqiy apparat skaneri tasdiqlandi!
       const scannedString = chars.join('');
       if (target === 'badge') {
         handleBadgeScanned(scannedString);
@@ -276,7 +309,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
       return;
     }
 
-    // Belgilarni yig'ish (printable keys)
+    // 6. Belgilarni yig'ish (faqat bitta belgili harflar)
     if (e.key.length === 1) {
       bufferRef.current.chars.push(e.key);
       bufferRef.current.times.push(now);
@@ -285,43 +318,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
         clearTimeout(bufferRef.current.timer);
       }
 
-      // Agar skaner Enter yubormasa yoki inson klaviaturani sekin bossa
-      // 65ms kutamiz: apparat skaneri bu vaqt ichida barcha belgilarni yuborib bo'ladi.
+      // QAT'IY XAVFSIZLIK SOQCHISI (Watchdog):
+      // Skaner o'zining butun oqimini (Enter bilan birga) 80ms ichida yuborib bo'ladi.
+      // Agar 85ms ichida Enter kelmasa, demak bu inson qo'li bilan harflar bosilmoqda!
+      // Buferni darhol tozalanadi va xatolik beriladi.
+      // HECH QACHON o'z-o'zidan tasdiqlanmaydi!
       bufferRef.current.timer = setTimeout(() => {
-        const chars = [...bufferRef.current.chars];
-        const times = [...bufferRef.current.times];
         bufferRef.current = { chars: [], times: [], timer: null };
-
-        if (chars.length === 0) return;
-
-        // Agar atigi 1 ta belgi kelgan bo'lsa va 65ms o'tgan bo'lsa: bu inson qo'li!
-        if (chars.length === 1) {
-          triggerManualError();
-          return;
-        }
-
-        // Barcha belgilar orasidagi oraliqni tekshirish
-        let isManual = false;
-        for (let i = 1; i < times.length; i++) {
-          if (times[i] - times[i - 1] > 55) {
-            isManual = true;
-            break;
-          }
-        }
-
-        if (isManual) {
-          triggerManualError();
-          return;
-        }
-
-        // Enter-siz skaner oqimi qabul qilindi
-        const scannedString = chars.join('');
-        if (target === 'badge') {
-          handleBadgeScanned(scannedString);
-        } else {
-          handleTableScanned(scannedString);
-        }
-      }, 65);
+        triggerManualError();
+      }, 85);
     }
   };
 
