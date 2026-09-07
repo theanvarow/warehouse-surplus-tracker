@@ -111,13 +111,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   // Sanitize scanned text
   const sanitizeScannedString = (raw: string): string => {
     let clean = raw.trim();
-    if (clean.startsWith('{') && clean.endsWith('}')) {
+    if (
+      (clean.startsWith('{') && clean.endsWith('}')) ||
+      (clean.startsWith('{"') && clean.includes('}'))
+    ) {
       try {
         const parsed = JSON.parse(clean);
-        clean = parsed.fio || parsed.name || parsed.employeeName || clean;
+        clean =
+          parsed.fio ||
+          parsed.name ||
+          parsed.employeeName ||
+          parsed.fullName ||
+          parsed.full_name ||
+          parsed.worker ||
+          clean;
       } catch (e) {
         // ignore json parse error
       }
+    }
+    if (clean.toUpperCase().startsWith('FIO:') || clean.toUpperCase().startsWith('ФИО:')) {
+      clean = clean.slice(4).trim();
     }
     return clean;
   };
@@ -133,12 +146,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
 
       // Check if user accidentally scanned a table code into the name field
       const upper = clean.toUpperCase();
-      if (
-        upper.startsWith('STOL') ||
+      const isTableCode =
+        upper.startsWith('STOL-') ||
+        upper.startsWith('STOL_') ||
+        upper.startsWith('STOL ') ||
         upper.startsWith('ST-') ||
-        upper.startsWith('TABLE') ||
-        upper.startsWith('СТОЛ')
-      ) {
+        upper.startsWith('TABLE-') ||
+        upper.startsWith('TABLE ') ||
+        upper.startsWith('СТОЛ-') ||
+        upper.startsWith('СТОЛ ') ||
+        /^(STOL|СТОЛ|TABLE)\d+$/i.test(upper);
+
+      if (isTableCode) {
         setError(
           language === 'uz'
             ? 'Bu stol kodi! Iltimos, avval xodim beydjidagi QR kodni skanerlang.'
@@ -207,6 +226,73 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     setTimeout(() => tableRef.current?.focus(), 50);
   };
 
+  // Apparat skaneri buferini tekshirish va tasdiqlash:
+  // Har qanday uzunlikdagi (qisqa stol raqamlaridan tortib uzun 50-60 belgili FIO QR kodlarigacha)
+  // apparat skaneri tezligini tekshiradi va inson qo'li bilan yozishni 100% bloklaydi.
+  const validateAndCommitScannerBuffer = useCallback(
+    (target: 'badge' | 'table', snapshot: { chars: string[]; times: number[] }) => {
+      const chars = snapshot.chars;
+      const times = snapshot.times;
+
+      // Kamida talab qilinadigan belgilar soni
+      const minLen = target === 'badge' ? 3 : 2;
+      if (chars.length < minLen) {
+        triggerManualError();
+        return;
+      }
+
+      // Bir xil harflarni ushlab turishni rad etish (masalan: 'aaaaaa')
+      const uniqueChars = new Set(chars);
+      if (uniqueChars.size < 2 && chars.length > 2) {
+        triggerManualError();
+        return;
+      }
+
+      const totalDuration = times[times.length - 1] - times[0];
+      const avgInterval = totalDuration / Math.max(times.length - 1, 1);
+
+      // Inson klaviaturada harflarni bittalab terishi o'rtacha 150ms-400ms oladi.
+      // Apparat skanerlari esa harflarni 5ms - 35ms oralig'ida yuboradi.
+      // O'rtacha oraliq tezligi 50ms dan oshsa - qo'lda yozilgan deb topiladi.
+      if (avgInterval > 50) {
+        triggerManualError();
+        return;
+      }
+
+      // Belgilar orasidagi eng katta uzilish (gap) tekshiruvi:
+      // Skanerda harflar oqimi uzluksiz keladi (USB buferlash hisobiga ba'zan 40-60ms gacha cho'zilishi mumkin).
+      // Agar biror harf orasida 75ms dan ortiq uzilish bo'lsa - inson tergan bo'ladi.
+      let isManual = false;
+      for (let i = 1; i < times.length; i++) {
+        if (times[i] - times[i - 1] > 75) {
+          isManual = true;
+          break;
+        }
+      }
+
+      // Umumiy vaqt belgilar soniga mutanosib bo'lishi kerak:
+      // Har bir belgi uchun 60ms + 300ms zaxira (uzun FIO lar va 50-60 belgili QR kodlar bemalol o'qiladi)
+      const maxAllowedDuration = chars.length * 60 + 300;
+      if (totalDuration > maxAllowedDuration) {
+        isManual = true;
+      }
+
+      if (isManual) {
+        triggerManualError();
+        return;
+      }
+
+      // Faqat haqiqiy apparat skaneri tasdiqlandi!
+      const scannedString = chars.join('');
+      if (target === 'badge') {
+        handleBadgeScanned(scannedString);
+      } else {
+        handleTableScanned(scannedString);
+      }
+    },
+    [triggerManualError, handleBadgeScanned, handleTableScanned]
+  );
+
   // Generic keydown handler for strict hardware scanner velocity detection
   const handleScannerKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
@@ -249,65 +335,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         bufferRef.current.timer = null;
       }
 
-      const chars = [...bufferRef.current.chars];
-      const times = [...bufferRef.current.times];
+      const snapshot = {
+        chars: [...bufferRef.current.chars],
+        times: [...bufferRef.current.times],
+      };
       bufferRef.current = { chars: [], times: [], timer: null };
 
-      // Skaner kamida 2-3 belgidan iborat bo'lishi shart
-      const minLen = target === 'badge' ? 3 : 2;
-      if (chars.length < minLen) {
-        triggerManualError();
-        return;
-      }
-
-      // Bir xil harflarni ushlab turishni rad etish (masalan: 'aaaaaa')
-      const uniqueChars = new Set(chars);
-      if (uniqueChars.size < 2 && chars.length > 2) {
-        triggerManualError();
-        return;
-      }
-
-      // Umumiy vaqt tekshiruvi:
-      // Jismoniy skaner butun shtrix-kodni 15ms - 75ms ichida jo'natadi.
-      // Klaviaturada inson qo'li bilan yozish esa kamida 300ms - 2000ms oladi.
-      const totalDuration = times[times.length - 1] - times[0];
-      if (totalDuration > 85) {
-        triggerManualError();
-        return;
-      }
-
-      // Belgilar orasidagi tezlik tekshiruvi:
-      // Skanerda harflar oralig'i < 35ms bo'ladi.
-      let isManual = false;
-      for (let i = 1; i < times.length; i++) {
-        if (times[i] - times[i - 1] > 35) {
-          isManual = true;
-          break;
-        }
-      }
-
-      // O'rtacha oraliq tezligi <= 22ms bo'lishi kerak
-      const avgInterval = totalDuration / (times.length - 1);
-      if (avgInterval > 22) {
-        isManual = true;
-      }
-
-      if (isManual) {
-        triggerManualError();
-        return;
-      }
-
-      // Faqat haqiqiy apparat skaneri tasdiqlandi!
-      const scannedString = chars.join('');
-      if (target === 'badge') {
-        handleBadgeScanned(scannedString);
-      } else {
-        handleTableScanned(scannedString);
-      }
+      validateAndCommitScannerBuffer(target, snapshot);
       return;
     }
 
-    // 6. Belgilarni yig'ish (faqat bitta belgili harflar)
+    // 6. Belgilarni yig'ish (harflar, bo'sh joy, maxsus belgilar)
     if (e.key.length === 1) {
       bufferRef.current.chars.push(e.key);
       bufferRef.current.times.push(now);
@@ -316,15 +354,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         clearTimeout(bufferRef.current.timer);
       }
 
-      // QAT'IY XAVFSIZLIK SOQCHISI (Watchdog):
-      // Skaner o'zining butun oqimini (Enter bilan birga) 80ms ichida yuborib bo'ladi.
-      // Agar 85ms ichida Enter kelmasa, demak bu inson qo'li bilan harflar bosilmoqda!
-      // Buferni darhol tozalanadi va xatolik beriladi.
-      // HECH QACHON o'z-o'zidan tasdiqlanmaydi!
+      // Harflar oqimi tugashini kutish (160ms):
+      // Skaner o'z oqimini yuborib bo'lgach (hatto Enter bo'lmasa ham),
+      // 160ms dan so'ng avtomatik tekshirilib tasdiqlanadi.
+      // Inson esa 160ms ichida faqat 1 ta yoki sekin harf bosa oladi va xatolik ko'rsatiladi.
       bufferRef.current.timer = setTimeout(() => {
+        const snapshot = {
+          chars: [...bufferRef.current.chars],
+          times: [...bufferRef.current.times],
+        };
         bufferRef.current = { chars: [], times: [], timer: null };
-        triggerManualError();
-      }, 85);
+
+        validateAndCommitScannerBuffer(target, snapshot);
+      }, 160);
     }
   };
 
