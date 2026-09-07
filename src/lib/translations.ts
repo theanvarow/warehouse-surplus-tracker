@@ -11,7 +11,7 @@ export const translations = {
     settings: 'Sozlamalar',
     
     // Auth (Scanner only)
-    authTitle: 'Skaner Orqali Avtorizatsiya',
+    authTitle: 'Avtorizatsiya',
     authSubtitle: 'Kirish uchun xodim beydjigi va stol shtrix-kodini skanerlang',
     scanBadgePrompt: '1. Xodim beydjidagi QR kodni skanerlang',
     scanBadgePlaceholder: 'Xodim QR kodini skanerlang...',
@@ -161,7 +161,7 @@ export const translations = {
     settings: 'Настройки',
     
     // Auth (Scanner only)
-    authTitle: 'Авторизация по Сканеру',
+    authTitle: 'Авторизация',
     authSubtitle: 'Отсканируйте QR-код бейджа и штрих-код стола',
     scanBadgePrompt: '1. Отсканируйте QR-код на бейдже сотрудника',
     scanBadgePlaceholder: 'Сканируйте QR-код сотрудника...',
