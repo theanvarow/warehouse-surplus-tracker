@@ -150,37 +150,97 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const [isManualShake, setIsManualShake] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  // Lockout State: Qo'lda yozishga urinilganda tizimni 3 soniyaga to'liq muzlatish
+  const [lockoutRemaining, setLockoutRemaining] = useState<number>(0);
+  const isLockedOutRef = useRef<boolean>(false);
+  const lockoutIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Input refs
   const nameRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLInputElement>(null);
 
   // Hardware Scanner Buffers:
-  // Hardware scanners send characters in rapid bursts (< 45ms per character).
+  // Hardware scanners send characters in rapid bursts (< 25ms per character).
   // Human typing is slow (> 80ms).
   // We completely preventDefault on keydown, so manual typing CANNOT type anything into the input!
   const nameBufferRef = useRef<ScannerBuffer>({ chars: [], times: [], timer: null });
   const tableBufferRef = useRef<ScannerBuffer>({ chars: [], times: [], timer: null });
 
-  // Focus initially on employee QR input
-  useEffect(() => {
-    nameRef.current?.focus();
+  // Clear buffers helper
+  const clearBuffers = useCallback(() => {
+    if (nameBufferRef.current.timer) clearTimeout(nameBufferRef.current.timer);
+    nameBufferRef.current = { chars: [], times: [], timer: null };
+    if (tableBufferRef.current.timer) clearTimeout(tableBufferRef.current.timer);
+    tableBufferRef.current = { chars: [], times: [], timer: null };
   }, []);
 
-  // Trigger manual typing blocked error
-  const triggerManualError = useCallback(() => {
-    setError(
-      language === 'uz'
-        ? "⚠️ Qo'lda yozish taqiqlangan! Iltimos, faqat skaner qurilmasi bilan skanerlang."
-        : '⚠️ Ручной ввод запрещен! Пожалуйста, используйте только сканер.'
-    );
-    setIsManualShake(true);
-    soundManager.playErrorSound();
-    setTimeout(() => setIsManualShake(false), 500);
-  }, [language]);
+  // Trigger manual typing lockout (3 seconds penalty lockout)
+  const triggerManualLockout = useCallback(
+    (customMsg?: string) => {
+      clearBuffers();
+      isLockedOutRef.current = true;
+      setLockoutRemaining(3);
+
+      const msg =
+        customMsg ||
+        (language === 'uz'
+          ? "⚠️ Qo'lda kiritish taqiqlangan! Tizim 3 soniyaga bloklandi. Faqat apparat skaneridan foydalaning!"
+          : '⚠️ Ручной ввод запрещен! Система заблокирована на 3 секунды. Используйте только сканер!');
+
+      setError(msg);
+      setIsManualShake(true);
+      soundManager.playErrorSound();
+      setTimeout(() => setIsManualShake(false), 500);
+
+      if (lockoutIntervalRef.current) {
+        clearInterval(lockoutIntervalRef.current);
+      }
+
+      let timeLeft = 3;
+      lockoutIntervalRef.current = setInterval(() => {
+        timeLeft -= 1;
+        setLockoutRemaining(timeLeft);
+        if (timeLeft <= 0) {
+          if (lockoutIntervalRef.current) {
+            clearInterval(lockoutIntervalRef.current);
+            lockoutIntervalRef.current = null;
+          }
+          isLockedOutRef.current = false;
+          setLockoutRemaining(0);
+          clearBuffers();
+          // Focus active input
+          setTimeout(() => {
+            if (!isNameScanned) {
+              nameRef.current?.focus();
+            } else if (!isTableScanned) {
+              tableRef.current?.focus();
+            }
+          }, 50);
+        }
+      }, 1000);
+    },
+    [clearBuffers, isNameScanned, isTableScanned, language]
+  );
+
+  // Focus initially on employee QR input and clean up timers on unmount
+  useEffect(() => {
+    nameRef.current?.focus();
+    return () => {
+      if (lockoutIntervalRef.current) clearInterval(lockoutIntervalRef.current);
+      if (nameBufferRef.current.timer) clearTimeout(nameBufferRef.current.timer);
+      if (tableBufferRef.current.timer) clearTimeout(tableBufferRef.current.timer);
+    };
+  }, []);
 
   // Complete Login
   const performLogin = useCallback(
     (empName: string, tblNum: string, shift: ShiftId) => {
+      const cleanEmp = empName.trim();
+      const cleanTbl = tblNum.trim();
+      if (!cleanEmp || cleanEmp.length < 4) return;
+      if (!cleanTbl || cleanTbl.length < 2) return;
+      if (!isNameScanned || !isTableScanned) return;
+
       setIsLoggingIn(true);
       soundManager.playBoxScanSound();
       if (typeof window !== 'undefined') {
@@ -188,13 +248,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       }
       setTimeout(() => {
         onLogin({
-          employeeName: empName,
-          tableNumber: tblNum,
+          employeeName: cleanEmp,
+          tableNumber: cleanTbl,
           shift: shift,
         });
       }, 350);
     },
-    [onLogin]
+    [isNameScanned, isTableScanned, onLogin]
   );
 
   // Sanitize scanned text with automatic Russian keyboard layout recovery
@@ -258,8 +318,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const handleBadgeScanned = useCallback(
     (scannedVal: string) => {
       let clean = sanitizeScannedString(scannedVal);
-      if (!clean || clean.length < 2) {
-        triggerManualError();
+      // Xodim QR kodi kamida 4 belgi bo'lishi shart va tasodifiy klaviatura spamini rad etish
+      if (!clean || clean.length < 4 || /^(asdf|qwer|zxcv|1234|йцук|фыва)/i.test(clean)) {
+        triggerManualLockout();
         return;
       }
 
@@ -298,7 +359,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         tableRef.current?.focus();
       }, 100);
     },
-    [language, triggerManualError]
+    [language, triggerManualLockout]
   );
 
   // Process Desk / Table Barcode Scan
@@ -314,8 +375,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         clean = convertRuLayoutToEn(clean).toUpperCase();
       }
 
-      if (!clean || clean.length < 1) {
-        triggerManualError();
+      if (!clean || clean.length < 2 || /^(ASDF|QWER|ZXCV|1234)/i.test(clean)) {
+        triggerManualLockout();
         return;
       }
 
@@ -336,14 +397,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       soundManager.playItemScanSound();
       // Operator bemalol smenani ko'rib tanlaydi va 'Tizimga kirish' tugmasini bosadi.
     },
-    [triggerManualError, language]
+    [triggerManualLockout, language]
   );
 
   // Reset Employee Badge to re-scan
   const handleResetBadge = () => {
     setName('');
     setIsNameScanned(false);
-    nameBufferRef.current = { chars: [], times: [], timer: null };
+    clearBuffers();
+    isLockedOutRef.current = false;
+    setLockoutRemaining(0);
+    if (lockoutIntervalRef.current) {
+      clearInterval(lockoutIntervalRef.current);
+      lockoutIntervalRef.current = null;
+    }
+    setError('');
     setTimeout(() => nameRef.current?.focus(), 50);
   };
 
@@ -351,63 +419,65 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const handleResetTable = () => {
     setTableNumber('');
     setIsTableScanned(false);
-    tableBufferRef.current = { chars: [], times: [], timer: null };
+    clearBuffers();
+    isLockedOutRef.current = false;
+    setLockoutRemaining(0);
+    if (lockoutIntervalRef.current) {
+      clearInterval(lockoutIntervalRef.current);
+      lockoutIntervalRef.current = null;
+    }
+    setError('');
     setTimeout(() => tableRef.current?.focus(), 50);
   };
 
   // Apparat skaneri buferini tekshirish va tasdiqlash:
-  // Har qanday uzunlikdagi (qisqa stol raqamlaridan tortib uzun 50-60 belgili FIO QR kodlarigacha)
-  // apparat skaneri tezligini tekshiradi va inson qo'li bilan yozishni 100% bloklaydi.
+  // Qat'iy tezlik va uzluksizlik talabi — qo'lda qanchalik tez bosilsa ham (ko'p marta urinsa ham) o'tkazilmaydi!
   const validateAndCommitScannerBuffer = useCallback(
     (target: 'badge' | 'table', snapshot: { chars: string[]; times: number[] }) => {
       const chars = snapshot.chars;
       const times = snapshot.times;
 
-      // Kamida talab qilinadigan belgilar soni
-      const minLen = target === 'badge' ? 3 : 2;
+      // 1. Kamida talab qilinadigan belgilar soni:
+      // Xodim QR kodi kamida 6 ta belgi bo'lishi shart! (Haqiqiy FIO QR kodlari 15-50 belgi)
+      // Stol kodi kamida 3 ta belgi bo'lishi shart! (ST-01, STOL-1, 001)
+      const minLen = target === 'badge' ? 6 : 3;
       if (chars.length < minLen) {
-        triggerManualError();
+        triggerManualLockout();
         return;
       }
 
-      // Bir xil harflarni ushlab turishni rad etish (masalan: 'aaaaaa')
+      // 2. Bir xil harflarni ushlab turish yoki takrorlashni rad etish
       const uniqueChars = new Set(chars);
-      if (uniqueChars.size < 2 && chars.length > 2) {
-        triggerManualError();
+      if (uniqueChars.size < (target === 'badge' ? 3 : 2)) {
+        triggerManualLockout();
         return;
       }
 
       const totalDuration = times[times.length - 1] - times[0];
       const avgInterval = totalDuration / Math.max(times.length - 1, 1);
 
-      // Inson klaviaturada harflarni bittalab terishi o'rtacha 150ms-400ms oladi.
-      // Apparat skanerlari esa harflarni 5ms - 35ms oralig'ida yuboradi.
-      // O'rtacha oraliq tezligi 50ms dan oshsa - qo'lda yozilgan deb topiladi.
-      if (avgInterval > 50) {
-        triggerManualError();
+      // 3. Qat'iy apparat skaner tezligi tekshiruvi:
+      // Apparat skanerlari harflarni 5ms - 25ms oralig'ida yuboradi.
+      // O'rtacha oraliq tezligi 35ms dan oshsa - bu inson tomonidan terilgan deb topiladi!
+      if (avgInterval > 35) {
+        triggerManualLockout();
         return;
       }
 
-      // Belgilar orasidagi eng katta uzilish (gap) tekshiruvi:
-      // Skanerda harflar oqimi uzluksiz keladi (USB buferlash hisobiga ba'zan 40-60ms gacha cho'zilishi mumkin).
-      // Agar biror harf orasida 75ms dan ortiq uzilish bo'lsa - inson tergan bo'ladi.
-      let isManual = false;
+      // 4. Belgilar orasidagi eng katta uzilish (gap) tekshiruvi:
+      // Skanerda barcha harflar bir tekis oqim bilan keladi.
+      // Har qanday bitta belgi orasidagi uzilish 50ms dan oshsa - inson tergan bo'ladi!
       for (let i = 1; i < times.length; i++) {
-        if (times[i] - times[i - 1] > 75) {
-          isManual = true;
-          break;
+        if (times[i] - times[i - 1] > 50) {
+          triggerManualLockout();
+          return;
         }
       }
 
-      // Umumiy vaqt belgilar soniga mutanosib bo'lishi kerak:
-      // Har bir belgi uchun 60ms + 300ms zaxira (uzun FIO lar va 50-60 belgili QR kodlar bemalol o'qiladi)
-      const maxAllowedDuration = chars.length * 60 + 300;
+      // 5. Umumiy oqim vaqti tekshiruvi:
+      const maxAllowedDuration = chars.length * 35 + 180;
       if (totalDuration > maxAllowedDuration) {
-        isManual = true;
-      }
-
-      if (isManual) {
-        triggerManualError();
+        triggerManualLockout();
         return;
       }
 
@@ -419,7 +489,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         handleTableScanned(scannedString);
       }
     },
-    [triggerManualError, handleBadgeScanned, handleTableScanned]
+    [triggerManualLockout, handleBadgeScanned, handleTableScanned]
   );
 
   // Generic keydown handler for strict hardware scanner velocity detection
@@ -427,31 +497,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     e: React.KeyboardEvent<HTMLInputElement>,
     target: 'badge' | 'table'
   ) => {
+    // 0. LOCKOUT ACTIVE: Blok holatida barcha klaviatura signallari to'liq yo'qotiladi!
+    if (isLockedOutRef.current || lockoutRemaining > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     // 1. Block Paste (Ctrl+V / Cmd+V)
     if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
       e.preventDefault();
-      triggerManualError();
+      triggerManualLockout();
       return;
     }
 
     // 2. Block holding down keys (Key Repeat on keyboard)
     if (e.repeat) {
       e.preventDefault();
-      const bufferRef = target === 'badge' ? nameBufferRef : tableBufferRef;
-      if (bufferRef.current.timer) clearTimeout(bufferRef.current.timer);
-      bufferRef.current = { chars: [], times: [], timer: null };
-      triggerManualError();
+      triggerManualLockout();
       return;
     }
 
-    // 3. Allow browser navigation keys
-    if (e.key === 'Tab' || e.key === 'Escape') {
+    // 3. Allow browser Escape
+    if (e.key === 'Escape') {
       return;
     }
 
     // 4. STRICT ANTI-MANUAL:
-    // Prevent default on ANY printable or typing key!
-    // Hand-typed characters will NEVER be placed into the DOM input field.
+    // Klaviaturadan biror harf DOM inputga tushmasligi uchun preventDefault
     e.preventDefault();
 
     const bufferRef = target === 'badge' ? nameBufferRef : tableBufferRef;
@@ -470,13 +543,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       };
       bufferRef.current = { chars: [], times: [], timer: null };
 
+      // Bo'sh holda Enter bosilsa (masalan, klaviaturadan Enter urilsa) -> darhol bloklash!
+      if (snapshot.chars.length === 0) {
+        triggerManualLockout();
+        return;
+      }
+
       validateAndCommitScannerBuffer(target, snapshot);
       return;
     }
 
     // 6. Belgilarni yig'ish (harflar, bo'sh joy, maxsus belgilar)
-    // Skaner OS ning rus/ingliz klaviatura tartibidan qat'i nazar,
-    // QR-kodning haqiqiy original belgilarini aniqlaydi.
     const char = getAsciiCharFromEvent(e);
     if (char && char.length === 1) {
       bufferRef.current.chars.push(char);
@@ -486,10 +563,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         clearTimeout(bufferRef.current.timer);
       }
 
-      // Harflar oqimi tugashini kutish (160ms):
-      // Skaner o'z oqimini yuborib bo'lgach (hatto Enter bo'lmasa ham),
-      // 160ms dan so'ng avtomatik tekshirilib tasdiqlanadi.
-      // Inson esa 160ms ichida faqat 1 ta yoki sekin harf bosa oladi va xatolik ko'rsatiladi.
+      // Harflar oqimi tugashini kutish (140ms):
+      // Skaner o'z oqimini 140ms ichida yuborib bo'ladi.
       bufferRef.current.timer = setTimeout(() => {
         const snapshot = {
           chars: [...bufferRef.current.chars],
@@ -498,7 +573,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         bufferRef.current = { chars: [], times: [], timer: null };
 
         validateAndCommitScannerBuffer(target, snapshot);
-      }, 160);
+      }, 140);
     }
   };
 
@@ -574,11 +649,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
           </p>
         </div>
 
-        {/* Error / Manual Warning Alert */}
+        {/* Error / Manual Warning Alert with Lockout Countdown */}
         {error && (
-          <div className="mb-4 p-3.5 bg-rose-950/70 border border-rose-600/60 rounded-2xl flex items-start gap-2.5 text-rose-200 text-xs font-semibold animate-shake shadow-lg shadow-rose-950/40">
+          <div className="mb-4 p-3.5 bg-rose-950/80 border border-rose-600/70 rounded-2xl flex items-start gap-2.5 text-rose-200 text-xs font-semibold animate-shake shadow-lg shadow-rose-950/50">
             <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            <div className="leading-snug">{error}</div>
+            <div className="flex-1 leading-snug">
+              <div>{error}</div>
+              {lockoutRemaining > 0 && (
+                <div className="mt-2 flex items-center gap-2 text-amber-300 font-bold text-xs bg-amber-950/50 border border-amber-500/40 rounded-xl px-2.5 py-1.5 w-fit">
+                  <Clock className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />
+                  <span>
+                    {language === 'uz'
+                      ? `Qayta urinish uchun ${lockoutRemaining} soniya kuting...`
+                      : `Подождите ${lockoutRemaining} сек. для повторной попытки...`}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -590,12 +677,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
             className={`relative p-3.5 rounded-2xl border transition-all duration-200 ${
               isNameScanned
                 ? 'bg-emerald-950/20 border-emerald-500/50 shadow-md shadow-emerald-950/30'
+                : lockoutRemaining > 0
+                ? 'bg-rose-950/20 border-rose-500/60 shadow-lg shadow-rose-950/20'
                 : 'bg-[#191b26] border-indigo-500 shadow-lg shadow-indigo-500/10'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <QrCode className={`w-4 h-4 ${isNameScanned ? 'text-emerald-400' : 'text-indigo-400'}`} />
+                <QrCode className={`w-4 h-4 ${isNameScanned ? 'text-emerald-400' : lockoutRemaining > 0 ? 'text-rose-400' : 'text-indigo-400'}`} />
                 <span>{t.scanBadgePrompt}</span>
               </label>
 
@@ -637,20 +726,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                   ref={nameRef}
                   type="text"
                   value=""
+                  disabled={lockoutRemaining > 0}
                   readOnly={false}
                   onChange={(e) => e.preventDefault()}
                   onKeyDown={(e) => handleScannerKeyDown(e, 'badge')}
                   onPaste={(e) => {
                     e.preventDefault();
-                    triggerManualError();
+                    triggerManualLockout();
                   }}
-                  placeholder={t.scanBadgePlaceholder}
-                  className="w-full pl-11 pr-4 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner cursor-default select-none"
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    triggerManualLockout();
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  placeholder={
+                    lockoutRemaining > 0
+                      ? language === 'uz'
+                        ? `🔒 Bloklangan (${lockoutRemaining}s)...`
+                        : `🔒 Заблокировано (${lockoutRemaining}с)...`
+                      : t.scanBadgePlaceholder
+                  }
+                  className={`w-full pl-11 pr-4 py-3 rounded-xl text-white text-sm font-medium focus:outline-none transition-all shadow-inner cursor-default select-none ${
+                    lockoutRemaining > 0
+                      ? 'bg-rose-950/20 border border-rose-500/80 text-rose-300 placeholder-rose-400 cursor-not-allowed ring-2 ring-rose-500/20'
+                      : 'bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-slate-400'
+                  }`}
                   autoComplete="off"
+                  spellCheck={false}
                   autoFocus
                 />
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <QrCode className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  {lockoutRemaining > 0 ? (
+                    <Lock className="w-5 h-5 text-rose-400 animate-pulse" />
+                  ) : (
+                    <QrCode className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  )}
                 </div>
               </div>
             )}
@@ -675,13 +785,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
               isTableScanned
                 ? 'bg-emerald-950/20 border-emerald-500/50 shadow-md shadow-emerald-950/30'
                 : isNameScanned
-                ? 'bg-[#191b26] border-indigo-500 shadow-lg shadow-indigo-500/10'
+                ? lockoutRemaining > 0
+                  ? 'bg-rose-950/20 border-rose-500/60 shadow-lg shadow-rose-950/20'
+                  : 'bg-[#191b26] border-indigo-500 shadow-lg shadow-indigo-500/10'
                 : 'bg-[#191b26]/40 border-[#2e3347] opacity-65'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <Barcode className={`w-4 h-4 ${isTableScanned ? 'text-emerald-400' : 'text-indigo-400'}`} />
+                <Barcode className={`w-4 h-4 ${isTableScanned ? 'text-emerald-400' : lockoutRemaining > 0 ? 'text-rose-400' : 'text-indigo-400'}`} />
                 <span>{t.scanTablePrompt}</span>
               </label>
 
@@ -721,26 +833,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                   ref={tableRef}
                   type="text"
                   value=""
-                  disabled={!isNameScanned}
+                  disabled={!isNameScanned || lockoutRemaining > 0}
                   readOnly={false}
                   onChange={(e) => e.preventDefault()}
                   onKeyDown={(e) => handleScannerKeyDown(e, 'table')}
                   onPaste={(e) => {
                     e.preventDefault();
-                    triggerManualError();
+                    triggerManualLockout();
                   }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    triggerManualLockout();
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
                   placeholder={
-                    isNameScanned
+                    lockoutRemaining > 0
+                      ? language === 'uz'
+                        ? `🔒 Bloklangan (${lockoutRemaining}s)...`
+                        : `🔒 Заблокировано (${lockoutRemaining}с)...`
+                      : isNameScanned
                       ? t.scanTablePlaceholder
                       : language === 'uz'
                       ? 'Avval xodimni skanerlang...'
                       : 'Сначала сканируйте сотрудника...'
                   }
-                  className="w-full pl-11 pr-4 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-white placeholder-slate-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner cursor-default select-none"
+                  className={`w-full pl-11 pr-4 py-3 rounded-xl text-white text-sm font-medium focus:outline-none transition-all shadow-inner cursor-default select-none disabled:opacity-40 disabled:cursor-not-allowed ${
+                    lockoutRemaining > 0
+                      ? 'bg-rose-950/20 border border-rose-500/80 text-rose-300 placeholder-rose-400 cursor-not-allowed ring-2 ring-rose-500/20'
+                      : 'bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-slate-400'
+                  }`}
                   autoComplete="off"
+                  spellCheck={false}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                  <Barcode className="w-5 h-5 text-indigo-400" />
+                  {lockoutRemaining > 0 ? (
+                    <Lock className="w-5 h-5 text-rose-400 animate-pulse" />
+                  ) : (
+                    <Barcode className="w-5 h-5 text-indigo-400" />
+                  )}
                 </div>
               </div>
             )}
@@ -819,7 +949,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
           ) : isNameScanned && isTableScanned ? (
             <button
               type="button"
+              disabled={isLoggingIn || !name || !tableNumber || name.trim().length < 4 || tableNumber.trim().length < 2}
               onClick={() => {
+                if (isLoggingIn) return;
+                if (!isNameScanned || !isTableScanned) return;
+                if (!name || name.trim().length < 4) return;
+                if (!tableNumber || tableNumber.trim().length < 2) return;
                 if (!selectedShift) {
                   setError(
                     language === 'uz'
