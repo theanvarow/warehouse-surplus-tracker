@@ -574,7 +574,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
               </label>
               {selectedShift ? (
                 <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                  ✓ {selectedShift}-smena
+                  {language === 'uz' ? `✓ ${selectedShift}-smena` : `✓ ${selectedShift}-я смена`}
                 </span>
               ) : isNameScanned && isTableScanned ? (
                 <span className="text-[11px] font-bold text-amber-400 animate-pulse">
@@ -637,7 +637,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
             >
               <span>
                 {selectedShift
-                  ? `${selectedShift}-Smena bilan tizimga kirish`
+                  ? language === 'uz'
+                    ? `${selectedShift}-Smena bilan tizimga kirish`
+                    : `Войти в систему (${selectedShift}-я Смена)`
                   : language === 'uz'
                   ? 'Smenani tanlang va kiring'
                   : 'Выберите смену для входа'}
