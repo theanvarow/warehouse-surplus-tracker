@@ -371,13 +371,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     }
 
     const cleanTargetBox = targetBox.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
-    const isValid80or85 = cleanTargetBox.length >= 2 && (cleanTargetBox.startsWith('80') || cleanTargetBox.startsWith('85'));
-    if (!cleanTargetBox || !isValid80or85) {
+    const isValid80 = cleanTargetBox.length >= 2 && cleanTargetBox.startsWith('80');
+    if (!cleanTargetBox || !isValid80) {
       soundManager.playErrorSound();
       alert(
         language === 'uz'
-          ? '❌ Qayta joylangan korup faqat 80 yoki 85 bilan boshlanishi shart! (Masalan: 80-..., 85-...). Boshqa hech narsa qabul qilinmaydi.'
-          : '❌ Короб «Куда переложен» должен начинаться только с 80 или 85! (Напр: 80-..., 85-...). Другие номера не принимаются.'
+          ? '❌ Qayta joylangan korup faqat 80 bilan boshlanishi shart! (Masalan: 80-...). Boshqa hech narsa qabul qilinmaydi.'
+          : '❌ Короб «Куда переложен» должен начинаться только с 80! (Напр: 80-...). Другие номера не принимаются.'
       );
       setTargetBox('');
       targetBoxRef.current?.focus();
@@ -440,7 +440,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
   const totalQuantity = items.reduce((sum, i) => sum + (i.count || 1), 0);
   const cleanTargetBox = targetBox.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
-  const isTargetBoxValid = cleanTargetBox.length >= 2 && (cleanTargetBox.startsWith('80') || cleanTargetBox.startsWith('85'));
+  const isTargetBoxValid = cleanTargetBox.length >= 2 && cleanTargetBox.startsWith('80');
   const isTargetBoxInvalid = cleanTargetBox.length >= 2 && !isTargetBoxValid;
 
   return (
@@ -758,12 +758,12 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                     type="button"
                     onClick={() => {
                       const cleanCurrentBox = boxNumber.trim().replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase();
-                      if (!cleanCurrentBox.startsWith('80') && !cleanCurrentBox.startsWith('85')) {
+                      if (!cleanCurrentBox.startsWith('80')) {
                         soundManager.playErrorSound();
                         alert(
                           language === 'uz'
-                            ? 'Ushbu korup raqami 80 yoki 85 bilan boshlanmagan! Qayta joylangan korup faqat 80 yoki 85 bilan boshlanishi shart.'
-                            : 'Текущий короб не начинается с 80 или 85! Короб «Куда переложен» должен начинаться только с 80 или 85.'
+                            ? 'Ushbu korup raqami 80 bilan boshlanmagan! Qayta joylangan korup faqat 80 bilan boshlanishi shart.'
+                            : 'Текущий короб не начинается с 80! Короб «Куда переложен» должен начинаться только с 80.'
                         );
                         return;
                       }
@@ -785,12 +785,12 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                     : 'text-slate-400'
                 }`}>
                   {isTargetBoxInvalid
-                    ? (language === 'uz' ? '❌ Faqat 80 yoki 85!' : '❌ Только 80 или 85!')
+                    ? (language === 'uz' ? '❌ Faqat 80!' : '❌ Только 80!')
                     : isTargetBoxValid
                     ? (language === 'uz' ? '✅ Qabul qilindi' : '✅ Принято')
                     : items.length > 0 && !targetBox.trim()
-                    ? (language === 'uz' ? '⚠️ Majburiy (80/85)!' : '⚠️ Обязательно (80/85)!')
-                    : (language === 'uz' ? 'Faqat 80/85' : 'Только 80/85')}
+                    ? (language === 'uz' ? '⚠️ Majburiy (80)!' : '⚠️ Обязательно (80)!')
+                    : (language === 'uz' ? 'Faqat 80' : 'Только 80')}
                 </span>
               </div>
             </div>
@@ -810,8 +810,8 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                       soundManager.playErrorSound();
                       alert(
                         language === 'uz'
-                          ? '❌ Qayta joylangan korup faqat 80 yoki 85 bilan boshlanishi shart! Boshqa raqam qabul qilinmaydi.'
-                          : '❌ Короб «Куда переложен» должен начинаться только с 80 или 85! Другие номера не принимаются.'
+                          ? '❌ Qayta joylangan korup faqat 80 bilan boshlanishi shart! Boshqa raqam qabul qilinmaydi.'
+                          : '❌ Короб «Куда переложен» должен начинаться только с 80! Другие номера не принимаются.'
                       );
                       setTargetBox('');
                       targetBoxRef.current?.focus();
@@ -825,13 +825,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                     soundManager.playErrorSound();
                     alert(
                       language === 'uz'
-                        ? '❌ Qayta joylangan korup faqat 80 yoki 85 bilan boshlanishi shart! Boshqa raqam qabul qilinmaydi.'
-                        : '❌ Короб «Куда переложен» должен начинаться только с 80 или 85! Другие номера не принимаются.'
+                        ? '❌ Qayta joylangan korup faqat 80 bilan boshlanishi shart! Boshqa raqam qabul qilinmaydi.'
+                        : '❌ Короб «Куда переложен» должен начинаться только с 80! Другие номера не принимаются.'
                     );
                     setTargetBox('');
                   }
                 }}
-                placeholder={language === 'uz' ? 'Faqat 80-... yoki 85-... (skanerlang yoki yozing)' : 'Только 80-... или 85-... (сканируйте или введите)'}
+                placeholder={language === 'uz' ? 'Faqat 80-... (skanerlang yoki yozing)' : 'Только 80-... (сканируйте или введите)'}
                 className={`w-full px-4 py-3 bg-[#161822] border rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 transition-all uppercase shadow-inner ${
                   isTargetBoxInvalid
                     ? 'border-rose-500 text-rose-200 focus:border-rose-400 focus:ring-rose-500/30'
@@ -846,8 +846,8 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
                   <span>
                     {language === 'uz'
-                      ? '❌ Korup raqami faqat 80 yoki 85 bilan boshlanishi shart! Boshqa qabul qilinmaydi.'
-                      : '❌ Номер короба должен начинаться только с 80 или 85! Другие не принимаются.'}
+                      ? '❌ Korup raqami faqat 80 bilan boshlanishi shart! Boshqa qabul qilinmaydi.'
+                      : '❌ Номер короба должен начинаться только с 80! Другие не принимаются.'}
                   </span>
                 </div>
               )}
@@ -875,14 +875,14 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             ) : isTargetBoxInvalid ? (
               <span className="text-rose-400">
                 {language === 'uz'
-                  ? '❌ Korup faqat 80 yoki 85 bilan boshlanishi shart!'
-                  : '❌ Короб должен начинаться только с 80 или 85!'}
+                  ? '❌ Korup faqat 80 bilan boshlanishi shart!'
+                  : '❌ Короб должен начинаться только с 80!'}
               </span>
             ) : !targetBox.trim() && items.length > 0 ? (
               <span>
                 {language === 'uz'
-                  ? '«Qayta joylangan korup» (80 yoki 85) maydonini to\'ldiring'
-                  : 'Укажите «Куда переложен» (80 или 85) для завершения'}
+                  ? '«Qayta joylangan korup» (80) maydonini to\'ldiring'
+                  : 'Укажите «Куда переложен» (80) для завершения'}
               </span>
             ) : (
               <span>{language === 'uz' ? 'Yakunlash' : 'Завершить'}</span>
