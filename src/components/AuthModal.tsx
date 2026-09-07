@@ -21,6 +21,7 @@ import {
 interface AuthModalProps {
   language: Language;
   onLogin: (session: { employeeName: string; tableNumber: string; shift: ShiftId }) => void;
+  onLanguageChange?: (lang: Language) => void;
 }
 
 const SHIFTS: { id: ShiftId; titleUz: string; titleRu: string }[] = [
@@ -36,7 +37,7 @@ interface ScannerBuffer {
   timer: NodeJS.Timeout | null;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLanguageChange }) => {
   const t = useTranslation(language);
 
   // Form State
@@ -344,9 +345,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
         {/* Glowing top ambient light */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-32 bg-indigo-600/20 blur-3xl rounded-full pointer-events-none" />
 
-        {/* Modal Header */}
-        <div className="flex flex-col items-center text-center mb-6 relative">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold mb-2.5">
+        {/* Modal Top Bar: Mode Badge & Language Switcher */}
+        <div className="flex items-center justify-between mb-4 relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -354,6 +355,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
             <span>{language === 'uz' ? 'Faqat Skaner Rejimi' : 'Только режим сканера'}</span>
           </div>
 
+          {/* Quick Language Switcher directly inside modal */}
+          {onLanguageChange && (
+            <div className="flex items-center bg-[#161824] border border-[#2e3347] rounded-xl p-0.5 shadow-inner">
+              <button
+                type="button"
+                onClick={() => {
+                  onLanguageChange('uz');
+                  soundManager.playItemScanSound();
+                }}
+                className={`px-3 py-1 text-xs font-black rounded-lg transition-all cursor-pointer ${
+                  language === 'uz'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#25283a]'
+                }`}
+              >
+                UZ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onLanguageChange('ru');
+                  soundManager.playItemScanSound();
+                }}
+                className={`px-3 py-1 text-xs font-black rounded-lg transition-all cursor-pointer ${
+                  language === 'ru'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#25283a]'
+                }`}
+              >
+                RU
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Header */}
+        <div className="flex flex-col items-center text-center mb-6 relative">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
             <span>{t.authTitle}</span>
           </h2>

@@ -222,7 +222,14 @@ export default function Home() {
           <>
             {/* Step 1: All-in-one Login Modal (FIO + Stol + Smena) */}
             {!userSession && (
-              <AuthModal language={language} onLogin={handleLogin} />
+              <AuthModal
+                language={language}
+                onLanguageChange={(lang) => {
+                  setLanguage(lang);
+                  storageService.setLanguage(lang);
+                }}
+                onLogin={handleLogin}
+              />
             )}
 
             {/* Step 2: Shift Selector Modal (Only when changing shift from Header) */}
