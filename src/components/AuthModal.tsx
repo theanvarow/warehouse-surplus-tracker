@@ -14,7 +14,6 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertTriangle,
-  Zap,
   Lock
 } from 'lucide-react';
 
@@ -467,7 +466,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                 <span>{t.scanBadgePrompt}</span>
               </label>
 
-              {isNameScanned ? (
+              {isNameScanned && (
                 <button
                   type="button"
                   onClick={handleResetBadge}
@@ -477,11 +476,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                   <RotateCcw className="w-3 h-3" />
                   <span>{t.rescanBtn}</span>
                 </button>
-              ) : (
-                <div className="flex items-center gap-1 text-indigo-400 text-[11px] font-semibold">
-                  <Zap className="w-3.5 h-3.5 animate-bounce-subtle" />
-                  <span>{t.waitingForScan}</span>
-                </div>
               )}
             </div>
 
@@ -558,7 +552,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                 <span>{t.scanTablePrompt}</span>
               </label>
 
-              {isTableScanned ? (
+              {isTableScanned && (
                 <button
                   type="button"
                   onClick={handleResetTable}
@@ -568,12 +562,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                   <RotateCcw className="w-3 h-3" />
                   <span>{t.rescanBtn}</span>
                 </button>
-              ) : isNameScanned ? (
-                <div className="flex items-center gap-1 text-indigo-400 text-[11px] font-semibold">
-                  <Zap className="w-3.5 h-3.5 animate-bounce-subtle" />
-                  <span>{t.waitingForScan}</span>
-                </div>
-              ) : null}
+              )}
             </div>
 
             {isTableScanned ? (
