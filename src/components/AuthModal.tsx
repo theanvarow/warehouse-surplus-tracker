@@ -45,15 +45,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
   const [isNameScanned, setIsNameScanned] = useState(false);
   const [isTableScanned, setIsTableScanned] = useState(false);
 
-  // Remember last shift or default to shift 1
-  const [selectedShift, setSelectedShift] = useState<ShiftId>(() => {
+  // Shift state: starts null or saved shift, but NEVER auto-logins until user confirms
+  const [selectedShift, setSelectedShift] = useState<ShiftId | null>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('vp_last_shift') as ShiftId;
       if (saved && ['1', '2', '3', '4'].includes(saved)) {
         return saved;
       }
     }
-    return '1';
+    return null;
   });
 
   const [error, setError] = useState('');
@@ -184,13 +184,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
       setIsTableScanned(true);
       setError('');
       soundManager.playItemScanSound();
-
-      // If shift is already selected and name is scanned -> Auto Login immediately!
-      if (name && selectedShift) {
-        performLogin(name, clean, selectedShift);
-      }
+      // Hech qanday avtomatik sakrab kirib ketish yo'q!
+      // Operator bemalol smenani ko'rib tanlaydi va 'Tizimga kirish' tugmasini bosadi.
     },
-    [name, selectedShift, performLogin, triggerManualError, language]
+    [triggerManualError, language]
   );
 
   // Reset Employee Badge to re-scan
@@ -330,15 +327,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
     }
   };
 
-  // Handle Shift Select & Instant Login if both scans are ready
+  // Handle Shift Select: faqat smenani belgilaydi, avtomatik kiritib yubormaydi!
   const handleShiftSelect = (shiftId: ShiftId) => {
     setSelectedShift(shiftId);
     setError('');
     soundManager.playItemScanSound();
-
-    if (isNameScanned && isTableScanned) {
-      performLogin(name, tableNumber, shiftId);
-    }
   };
 
   return (
@@ -565,11 +558,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
           {/* ============================================================ */}
           {/* STEP 3: ISH SMENASI */}
           {/* ============================================================ */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center space-x-1.5">
-              <Clock className="w-3.5 h-3.5 text-indigo-400" />
-              <span>{language === 'uz' ? 'Ish smenasi' : 'Рабочая смена'}</span>
-            </label>
+          <div
+            className={`p-3.5 rounded-2xl border transition-all duration-200 ${
+              isNameScanned && isTableScanned && !selectedShift
+                ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/20'
+                : selectedShift
+                ? 'bg-emerald-950/15 border-emerald-500/40'
+                : 'bg-[#191b26]/50 border-[#2e3347]'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+                <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{language === 'uz' ? '3. Ish smenasini tanlang' : '3. Выберите смену'}</span>
+              </label>
+              {selectedShift ? (
+                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  ✓ {selectedShift}-smena
+                </span>
+              ) : isNameScanned && isTableScanned ? (
+                <span className="text-[11px] font-bold text-amber-400 animate-pulse">
+                  {language === 'uz' ? 'Smenani bosing 👇' : 'Нажмите смену 👇'}
+                </span>
+              ) : null}
+            </div>
             <div className="grid grid-cols-4 gap-2">
               {SHIFTS.map((shift) => {
                 const isSelected = selectedShift === shift.id;
@@ -578,9 +590,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
                     key={shift.id}
                     type="button"
                     onClick={() => handleShiftSelect(shift.id)}
-                    className={`py-2 px-1 rounded-xl border text-center font-bold text-xs transition-all cursor-pointer flex flex-col items-center justify-center space-y-0.5 ${
+                    className={`py-2.5 px-1 rounded-xl border text-center font-bold text-xs transition-all cursor-pointer flex flex-col items-center justify-center space-y-0.5 ${
                       isSelected
-                        ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
+                        ? 'bg-indigo-600 border-indigo-400 text-white shadow-md shadow-indigo-600/30 scale-[1.03]'
                         : 'bg-[#191b26] hover:bg-[#25283a] border-[#2e3347] text-slate-300 hover:text-white'
                     }`}
                   >
@@ -595,29 +607,54 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin }) => {
           </div>
         </div>
 
-        {/* Action Button: Auto-login or Manual trigger if both scanned */}
+        {/* Action Button: Explicit Confirmation via Login button */}
         <div className="mt-6 pt-3 border-t border-[#2e3347]/80">
           {isLoggingIn ? (
-            <div className="w-full py-3.5 px-6 bg-emerald-600 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+            <div className="w-full py-4 px-6 bg-emerald-600 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
               <Sparkles className="w-5 h-5 animate-spin" />
               <span>{t.autoLoggingIn}</span>
             </div>
           ) : isNameScanned && isTableScanned ? (
             <button
               type="button"
-              onClick={() => performLogin(name, tableNumber, selectedShift)}
-              className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 transition-all cursor-pointer group"
+              onClick={() => {
+                if (!selectedShift) {
+                  setError(
+                    language === 'uz'
+                      ? 'Iltimos, avval ish smenasini tanlang!'
+                      : 'Пожалуйста, сначала выберите смену!'
+                  );
+                  soundManager.playErrorSound();
+                  return;
+                }
+                performLogin(name, tableNumber, selectedShift);
+              }}
+              className={`w-full py-4 px-6 font-extrabold text-base rounded-2xl shadow-lg flex items-center justify-center space-x-2 transition-all cursor-pointer group ${
+                selectedShift
+                  ? 'bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white shadow-indigo-600/30 scale-[1.01]'
+                  : 'bg-indigo-600/70 hover:bg-indigo-600 text-white shadow-indigo-600/20'
+              }`}
             >
-              <span>{t.loginBtn}</span>
+              <span>
+                {selectedShift
+                  ? `${selectedShift}-Smena bilan tizimga kirish`
+                  : language === 'uz'
+                  ? 'Smenani tanlang va kiring'
+                  : 'Выберите смену для входа'}
+              </span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           ) : (
-            <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#191b26] border border-[#2e3347] text-slate-400 text-xs font-semibold text-center">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-[#191b26] border border-[#2e3347] text-slate-400 text-xs font-semibold text-center">
+              <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />
               <span>
-                {language === 'uz'
-                  ? 'Ikkala kod skanerlangach, tizimga avtomatik kiriladi'
-                  : 'После сканирования обоих кодов вход выполнится автоматически'}
+                {!isNameScanned
+                  ? language === 'uz'
+                    ? '1-qadam: Xodim beydjidagi QR kodni skanerlang'
+                    : 'Шаг 1: Отсканируйте QR-код бейджа'
+                  : language === 'uz'
+                  ? '2-qadam: Ish stoli shtrix-kodini skanerlang'
+                  : 'Шаг 2: Отсканируйте штрих-код стола'}
               </span>
             </div>
           )}
