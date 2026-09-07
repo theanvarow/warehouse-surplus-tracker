@@ -30,6 +30,96 @@ const SHIFTS: { id: ShiftId; titleUz: string; titleRu: string }[] = [
   { id: '4', titleUz: '4-Smena', titleRu: '4-я Смена' },
 ];
 
+// Russian QWERTY <-> ЙЦУКЕН mapping for decoding hardware scanner input
+const RU_TO_EN_MAP: Record<string, string> = {
+  'й': 'q', 'ц': 'w', 'у': 'e', 'к': 'r', 'е': 't', 'н': 'y', 'г': 'u', 'ш': 'i', 'щ': 'o', 'з': 'p', 'х': '[', 'ъ': ']',
+  'ф': 'a', 'ы': 's', 'в': 'd', 'а': 'f', 'п': 'g', 'р': 'h', 'о': 'j', 'л': 'k', 'д': 'l', 'ж': ';', 'э': "'",
+  'я': 'z', 'ч': 'x', 'с': 'c', 'м': 'v', 'и': 'b', 'т': 'n', 'ь': 'm', 'б': ',', 'ю': '.', '.': '/',
+  'Й': 'Q', 'Ц': 'W', 'У': 'E', 'К': 'R', 'Е': 'T', 'Н': 'Y', 'Г': 'U', 'Ш': 'I', 'Щ': 'O', 'З': 'P', 'Х': '{', 'Ъ': '}',
+  'Ф': 'A', 'Ы': 'S', 'В': 'D', 'А': 'F', 'П': 'G', 'Р': 'H', 'О': 'J', 'Л': 'K', 'Д': 'L', 'Ж': ':', 'Э': '"',
+  'Я': 'Z', 'Ч': 'X', 'С': 'C', 'М': 'V', 'И': 'B', 'Т': 'N', 'Ь': 'M', 'Б': '<', 'Ю': '>', ',': '?',
+  '"': '@', '№': '#', ';': '$', ':': '^', '?': '&'
+};
+
+export function convertRuLayoutToEn(str: string): string {
+  return str
+    .split('')
+    .map((c) => RU_TO_EN_MAP[c] ?? c)
+    .join('');
+}
+
+const SYMBOL_CODE_MAP: Record<string, [string, string]> = {
+  Space: [' ', ' '],
+  Minus: ['-', '_'],
+  Equal: ['=', '+'],
+  BracketLeft: ['[', '{'],
+  BracketRight: [']', '}'],
+  Backslash: ['\\', '|'],
+  Semicolon: [';', ':'],
+  Quote: ["'", '"'],
+  Comma: [',', '<'],
+  Period: ['.', '>'],
+  Slash: ['/', '?'],
+  Backquote: ['`', '~'],
+  Numpad0: ['0', '0'],
+  Numpad1: ['1', '1'],
+  Numpad2: ['2', '2'],
+  Numpad3: ['3', '3'],
+  Numpad4: ['4', '4'],
+  Numpad5: ['5', '5'],
+  Numpad6: ['6', '6'],
+  Numpad7: ['7', '7'],
+  Numpad8: ['8', '8'],
+  Numpad9: ['9', '9'],
+  NumpadDivide: ['/', '/'],
+  NumpadMultiply: ['*', '*'],
+  NumpadSubtract: ['-', '-'],
+  NumpadAdd: ['+', '+'],
+  NumpadDecimal: ['.', '.']
+};
+
+const SHIFT_DIGITS: Record<string, string> = {
+  '1': '!',
+  '2': '@',
+  '3': '#',
+  '4': '$',
+  '5': '%',
+  '6': '^',
+  '7': '&',
+  '8': '*',
+  '9': '(',
+  '0': ')'
+};
+
+function getAsciiCharFromEvent(e: React.KeyboardEvent): string {
+  const code = e.code;
+  const shift = e.shiftKey;
+
+  // 1. Letters: KeyA - KeyZ (Always ASCII regardless of OS layout)
+  if (code && code.startsWith('Key') && code.length === 4) {
+    const letter = code[3];
+    return shift ? letter.toUpperCase() : letter.toLowerCase();
+  }
+
+  // 2. Numbers: Digit0 - Digit9
+  if (code && code.startsWith('Digit') && code.length === 6) {
+    const digit = code[5];
+    return shift ? (SHIFT_DIGITS[digit] || digit) : digit;
+  }
+
+  // 3. Special symbols
+  if (code && SYMBOL_CODE_MAP[code]) {
+    return shift ? SYMBOL_CODE_MAP[code][1] : SYMBOL_CODE_MAP[code][0];
+  }
+
+  // 4. If e.code is missing/Unidentified, fallback to e.key with Russian layout check
+  if (e.key && e.key.length === 1) {
+    return RU_TO_EN_MAP[e.key] ?? e.key;
+  }
+
+  return e.key;
+}
+
 interface ScannerBuffer {
   chars: string[];
   times: number[];
@@ -107,9 +197,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     [onLogin]
   );
 
-  // Sanitize scanned text
+  // Sanitize scanned text with automatic Russian keyboard layout recovery
   const sanitizeScannedString = (raw: string): string => {
     let clean = raw.trim();
+
+    // 1. Agar skaner rus klaviatura tartibida harflarni yuborgan bo'lsa (masalan: Х" yoki ХЭ yoki ашщ yoki ые-)
+    if (
+      clean.startsWith('Х') ||
+      clean.startsWith('х') ||
+      clean.includes('ашщ') ||
+      clean.toUpperCase().startsWith('ЫЕ-') ||
+      clean.toUpperCase().startsWith('ЫЕ_') ||
+      clean.toUpperCase().startsWith('ЫЕЩД') ||
+      clean.toUpperCase().startsWith('ЕФИТУ') ||
+      clean.toUpperCase().startsWith('АШЩ:') ||
+      clean.toUpperCase().startsWith('АШЩЖ')
+    ) {
+      clean = convertRuLayoutToEn(clean).trim();
+    }
+
+    // 2. JSON formatni tekshirish
     if (
       (clean.startsWith('{') && clean.endsWith('}')) ||
       (clean.startsWith('{"') && clean.includes('}'))
@@ -125,9 +232,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
           parsed.worker ||
           clean;
       } catch (e) {
-        // ignore json parse error
+        // Ruscha tartibni inglizchaga o'girib qayta JSON tekshiramiz
+        try {
+          const converted = convertRuLayoutToEn(clean);
+          const parsed = JSON.parse(converted);
+          clean =
+            parsed.fio ||
+            parsed.name ||
+            parsed.employeeName ||
+            parsed.fullName ||
+            parsed.full_name ||
+            parsed.worker ||
+            clean;
+        } catch {}
       }
     }
+
     if (clean.toUpperCase().startsWith('FIO:') || clean.toUpperCase().startsWith('ФИО:')) {
       clean = clean.slice(4).trim();
     }
@@ -137,7 +257,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   // Process Employee QR Scan
   const handleBadgeScanned = useCallback(
     (scannedVal: string) => {
-      const clean = sanitizeScannedString(scannedVal);
+      let clean = sanitizeScannedString(scannedVal);
       if (!clean || clean.length < 2) {
         triggerManualError();
         return;
@@ -154,7 +274,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         upper.startsWith('TABLE ') ||
         upper.startsWith('СТОЛ-') ||
         upper.startsWith('СТОЛ ') ||
-        /^(STOL|СТОЛ|TABLE)\d+$/i.test(upper);
+        upper.startsWith('ЫЕ-') ||
+        upper.startsWith('ЫЕЩД-') ||
+        /^(STOL|СТОЛ|TABLE|ЫЕ|ЫЕЩД)\d+$/i.test(upper);
 
       if (isTableCode) {
         setError(
@@ -182,14 +304,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   // Process Desk / Table Barcode Scan
   const handleTableScanned = useCallback(
     (scannedVal: string) => {
-      const clean = sanitizeScannedString(scannedVal).toUpperCase();
+      let clean = sanitizeScannedString(scannedVal).toUpperCase();
+      if (
+        clean.startsWith('ЫЕ-') ||
+        clean.startsWith('ЫЕ_') ||
+        clean.startsWith('ЫЕЩД') ||
+        clean.startsWith('ЕФИТУ')
+      ) {
+        clean = convertRuLayoutToEn(clean).toUpperCase();
+      }
+
       if (!clean || clean.length < 1) {
         triggerManualError();
         return;
       }
 
       // Check if user accidentally scanned employee badge again into the table field
-      if (clean.includes(' ') && !clean.startsWith('ST') && !clean.startsWith('TABLE')) {
+      if (clean.includes(' ') && !clean.startsWith('ST') && !clean.startsWith('TABLE') && !clean.startsWith('СТОЛ')) {
         setError(
           language === 'uz'
             ? 'Bu xodim beydjigi! Iltimos, stoldagi shtrix-kodni skanerlang.'
@@ -203,7 +334,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       setIsTableScanned(true);
       setError('');
       soundManager.playItemScanSound();
-      // Hech qanday avtomatik sakrab kirib ketish yo'q!
       // Operator bemalol smenani ko'rib tanlaydi va 'Tizimga kirish' tugmasini bosadi.
     },
     [triggerManualError, language]
@@ -345,8 +475,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     }
 
     // 6. Belgilarni yig'ish (harflar, bo'sh joy, maxsus belgilar)
-    if (e.key.length === 1) {
-      bufferRef.current.chars.push(e.key);
+    // Skaner OS ning rus/ingliz klaviatura tartibidan qat'i nazar,
+    // QR-kodning haqiqiy original belgilarini aniqlaydi.
+    const char = getAsciiCharFromEvent(e);
+    if (char && char.length === 1) {
+      bufferRef.current.chars.push(char);
       bufferRef.current.times.push(now);
 
       if (bufferRef.current.timer) {
