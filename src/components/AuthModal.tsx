@@ -764,17 +764,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                 </div>
               </div>
             )}
-
-            {!isNameScanned && (
-              <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-1.5 px-1">
-                <Lock className="w-3 h-3 text-amber-400 shrink-0" />
-                <span>
-                  {language === 'uz'
-                    ? 'Klaviaturadan yozish bloklangan (faqat skanerlash)'
-                    : 'Ввод с клавиатуры заблокирован (только сканер)'}
-                </span>
-              </div>
-            )}
           </div>
 
           {/* ============================================================ */}
@@ -872,17 +861,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                     <Barcode className="w-5 h-5 text-indigo-400" />
                   )}
                 </div>
-              </div>
-            )}
-
-            {isNameScanned && !isTableScanned && (
-              <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-1.5 px-1">
-                <Lock className="w-3 h-3 text-amber-400 shrink-0" />
-                <span>
-                  {language === 'uz'
-                    ? "Stol raqami ham qo'lda yozilmaydi (faqat skanerlash)"
-                    : 'Номер стола также не вводится вручную (только сканирование)'}
-                </span>
               </div>
             )}
           </div>
