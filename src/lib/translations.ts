@@ -4,6 +4,7 @@ export const translations = {
   uz: {
     appTitle: 'VP Pershot',
     appSubtitle: 'Ortiqcha tovarlarni fiksatsiya qilish',
+    appLoading: 'VP Pershot yuklanmoqda...',
     warehouse: 'Omborxona',
     problemDept: 'Muammoli otdel',
     scannerMode: 'Skanerlash',
@@ -154,6 +155,7 @@ export const translations = {
   ru: {
     appTitle: 'ВП Пересчёт',
     appSubtitle: 'Фиксация проблемных товаров',
+    appLoading: 'ВП Пересчёт загружается...',
     warehouse: 'Склад',
     problemDept: 'Проблемный отдел',
     scannerMode: 'Сканирование',

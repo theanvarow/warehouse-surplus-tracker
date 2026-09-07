@@ -21,7 +21,20 @@ import { ProblemDeptTable } from '@/components/ProblemDeptTable';
 export default function Home() {
   // Global States
   const [currentTab, setCurrentTab] = useState<'scanner' | 'dashboard'>('scanner');
-  const [language, setLanguage] = useState<Language>('uz');
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('vp_scanner_settings');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.language === 'uz' || parsed.language === 'ru') {
+            return parsed.language;
+          }
+        }
+      } catch {}
+    }
+    return 'ru';
+  });
   const [userSession, setUserSession] = useState<UserSession | null>(null);
   const [isShiftSelecting, setIsShiftSelecting] = useState<boolean>(false);
   const [allItems, setAllItems] = useState<ScannedItem[]>([]);
@@ -195,7 +208,9 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-[#191b26] text-slate-100">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin shadow-sm" />
-          <p className="text-sm font-bold text-slate-300">VP Pershot yuklanmoqda...</p>
+          <p className="text-sm font-bold text-slate-300">
+            {language === 'uz' ? 'VP Pershot yuklanmoqda...' : 'ВП Пересчёт загружается...'}
+          </p>
         </div>
       </div>
     );

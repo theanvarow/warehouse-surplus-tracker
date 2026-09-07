@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS: GoogleSheetSettings = {
   scriptUrl: 'https://script.google.com/macros/s/AKfycbyBwdwK1JAMFDHHNHPGe5SOsg2t5-0vSQc1grC9NBOlFiLQOPLXeNY_zHNK9ypmgjo2sA/exec',
   autoSync: true,
   soundEnabled: true,
-  language: 'uz',
+  language: 'ru',
 };
 
 // Smena almashish vaqtlari (Ertalab 09:00 va Kechki 21:00) bo'yicha sessiya muddati
@@ -173,7 +173,7 @@ class StorageService {
   }
 
   public getLanguage(): Language {
-    return this.getSettings().language || 'uz';
+    return this.getSettings().language || 'ru';
   }
 
   public setLanguage(language: Language) {
