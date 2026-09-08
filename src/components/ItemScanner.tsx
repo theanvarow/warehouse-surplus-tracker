@@ -72,8 +72,9 @@ export const ItemScanner: React.FC<ItemScannerProps> = ({
 
       const currentTime = Date.now();
       const char = e.key;
+      const isTerminator = char === 'Enter' || char === 'Tab' || e.keyCode === 13 || e.keyCode === 9;
 
-      if (char === 'Enter') {
+      if (isTerminator) {
         if (buffer.trim().length > 2) {
           const scannedCode = buffer.trim();
           buffer = '';
@@ -83,7 +84,7 @@ export const ItemScanner: React.FC<ItemScannerProps> = ({
         return;
       }
 
-      if (currentTime - lastKeyTime > 80) {
+      if (currentTime - lastKeyTime > 250) {
         buffer = '';
       }
 

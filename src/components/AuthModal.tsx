@@ -91,7 +91,7 @@ const SHIFT_DIGITS: Record<string, string> = {
   '0': ')'
 };
 
-function getAsciiCharFromEvent(e: React.KeyboardEvent): string {
+function getAsciiCharFromEvent(e: KeyboardEvent | React.KeyboardEvent): string {
   const code = e.code;
   const shift = e.shiftKey;
 
@@ -156,27 +156,53 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const lockoutIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastCommitTimeRef = useRef<number>(0);
 
+  // State refs for global keydown listener
+  const isNameScannedRef = useRef<boolean>(false);
+  const isTableScannedRef = useRef<boolean>(false);
+  const nameValRef = useRef<string>('');
+  const tableValRef = useRef<string>('');
+  const selectedShiftRef = useRef<ShiftId | null>(selectedShift);
+
+  useEffect(() => {
+    isNameScannedRef.current = isNameScanned;
+  }, [isNameScanned]);
+
+  useEffect(() => {
+    isTableScannedRef.current = isTableScanned;
+  }, [isTableScanned]);
+
+  useEffect(() => {
+    nameValRef.current = name;
+  }, [name]);
+
+  useEffect(() => {
+    tableValRef.current = tableNumber;
+  }, [tableNumber]);
+
+  useEffect(() => {
+    selectedShiftRef.current = selectedShift;
+  }, [selectedShift]);
+
   // Input refs
   const nameRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLInputElement>(null);
 
-  // Hardware Scanner Buffers:
-  // Har qanday turdagi skanerlar (simli USB, simsiz 2.4G, Bluetooth, 2D QR skanerlar) oqimini yig'adi
-  const nameBufferRef = useRef<ScannerBuffer>({ chars: [], times: [], timer: null });
-  const tableBufferRef = useRef<ScannerBuffer>({ chars: [], times: [], timer: null });
+  // Hardware Scanner Universal Buffer:
+  // Katta va kichik apparat skanerlari (simli USB, simsiz 2.4G, mini Bluetooth, 2D QR skanerlar) oqimini yig'adi
+  const scannerBufferRef = useRef<ScannerBuffer>({ chars: [], times: [], timer: null });
 
   // Clear buffers helper
   const clearBuffers = useCallback(() => {
-    if (nameBufferRef.current.timer) clearTimeout(nameBufferRef.current.timer);
-    nameBufferRef.current = { chars: [], times: [], timer: null };
-    if (tableBufferRef.current.timer) clearTimeout(tableBufferRef.current.timer);
-    tableBufferRef.current = { chars: [], times: [], timer: null };
+    if (scannerBufferRef.current.timer) {
+      clearTimeout(scannerBufferRef.current.timer);
+    }
+    scannerBufferRef.current = { chars: [], times: [], timer: null };
   }, []);
 
   // Trigger manual typing lockout (2 seconds penalty lockout)
   const triggerManualLockout = useCallback(
     (customMsg?: string) => {
-      // Agar hozirgina skaner qabul qilingan bo'lsa (masalan CR+LF ikkinchi Enter), xatolik berilmaydi
+      // Agar hozirgina skaner qabul qilingan bo'lsa (masalan CR+LF ikkinchi Enter yoki Tab), xatolik berilmaydi
       if (Date.now() - lastCommitTimeRef.current < 600) {
         return;
       }
@@ -214,16 +240,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
           clearBuffers();
           // Focus active input
           setTimeout(() => {
-            if (!isNameScanned) {
+            if (!isNameScannedRef.current) {
               nameRef.current?.focus();
-            } else if (!isTableScanned) {
+            } else if (!isTableScannedRef.current) {
               tableRef.current?.focus();
             }
           }, 50);
         }
       }, 1000);
     },
-    [clearBuffers, isNameScanned, isTableScanned, language]
+    [clearBuffers, language]
   );
 
   // Focus initially on employee QR input and clean up timers on unmount
@@ -231,8 +257,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     nameRef.current?.focus();
     return () => {
       if (lockoutIntervalRef.current) clearInterval(lockoutIntervalRef.current);
-      if (nameBufferRef.current.timer) clearTimeout(nameBufferRef.current.timer);
-      if (tableBufferRef.current.timer) clearTimeout(tableBufferRef.current.timer);
+      if (scannerBufferRef.current.timer) clearTimeout(scannerBufferRef.current.timer);
     };
   }, []);
 
@@ -323,7 +348,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     (scannedVal: string) => {
       let clean = sanitizeScannedString(scannedVal);
       // Xodim QR kodi kamida 2-3 belgi bo'lishi shart va tasodifiy klaviatura spamini rad etish
-      if (!clean || clean.length < 2 || /^(asdf|qwer|zxcv|1234|йцук|фыва|qwerty)/i.test(clean)) {
+      if (!clean || clean.length < 2 || /^(asdf|qwer|zxcv|1234|йцук|фыва|qwerty|1111|0000)/i.test(clean)) {
         triggerManualLockout();
         return;
       }
@@ -355,13 +380,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
 
       setName(clean);
       setIsNameScanned(true);
+      isNameScannedRef.current = true;
       setError('');
       soundManager.playItemScanSound();
 
       // Automatically focus table barcode input
       setTimeout(() => {
         tableRef.current?.focus();
-      }, 100);
+      }, 50);
     },
     [language, triggerManualLockout]
   );
@@ -379,7 +405,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         clean = convertRuLayoutToEn(clean).toUpperCase();
       }
 
-      if (!clean || clean.length < 1 || /^(ASDF|QWER|ZXCV|1234)/i.test(clean)) {
+      if (!clean || clean.length < 1 || /^(ASDF|QWER|ZXCV|1234|1111|0000)/i.test(clean)) {
         triggerManualLockout();
         return;
       }
@@ -397,6 +423,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
 
       setTableNumber(clean);
       setIsTableScanned(true);
+      isTableScannedRef.current = true;
       setError('');
       soundManager.playItemScanSound();
       // Operator bemalol smenani ko'rib tanlaydi va 'Tizimga kirish' tugmasini bosadi.
@@ -408,6 +435,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const handleResetBadge = () => {
     setName('');
     setIsNameScanned(false);
+    isNameScannedRef.current = false;
     clearBuffers();
     isLockedOutRef.current = false;
     setLockoutRemaining(0);
@@ -423,6 +451,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const handleResetTable = () => {
     setTableNumber('');
     setIsTableScanned(false);
+    isTableScannedRef.current = false;
     clearBuffers();
     isLockedOutRef.current = false;
     setLockoutRemaining(0);
@@ -435,16 +464,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   };
 
   // Apparat skaneri buferini tekshirish va tasdiqlash:
-  // Barcha apparat skanerlari (simli USB, simsiz 2.4G, Bluetooth, 2D QR skanerlar) uchun universal moslashtirilgan
+  // Katta (USB statsionar) va kichik (mini Bluetooth, simsiz 2.4G, ring) skanerlar uchun to'liq universal
   const validateAndCommitScannerBuffer = useCallback(
     (target: 'badge' | 'table', snapshot: { chars: string[]; times: number[] }) => {
       const chars = snapshot.chars;
       const times = snapshot.times;
 
       // 1. Kamida talab qilinadigan belgilar soni:
-      // Xodim QR kodi kamida 3 ta belgi
-      // Stol kodi kamida 2 ta belgi (masalan: 01, ST-01, STOL-1)
-      const minLen = target === 'badge' ? 3 : 2;
+      // Xodim QR kodi kamida 2 ta belgi
+      // Stol kodi kamida 1 ta belgi (masalan: 1, 01, ST-1)
+      const minLen = target === 'badge' ? 2 : 1;
       if (chars.length < minLen) {
         triggerManualLockout();
         return;
@@ -458,30 +487,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       }
 
       const totalDuration = times[times.length - 1] - times[0];
-      const avgInterval = totalDuration / Math.max(times.length - 1, 1);
+      const avgInterval = times.length > 1 ? totalDuration / (times.length - 1) : 0;
 
       // 3. Apparat skaner tezligi tekshiruvi:
-      // Barcha apparat skanerlari (simli USB, simsiz 2.4G, Bluetooth, 2D QR)
-      // harflarni 5ms - 60ms oralig'ida yuboradi.
-      // Inson klaviaturada esa 120ms - 400ms da teradi.
-      // O'rtacha oraliq tezligi 65ms dan oshsa - qo'lda terilgan deb hisoblanadi!
-      if (avgInterval > 65) {
+      // Barcha apparat skanerlari (simli USB, simsiz 2.4G, kichik Bluetooth, 2D QR skanerlar)
+      // harflarni 5ms - 85ms oralig'ida yuboradi.
+      // O'rtacha oraliq tezligi 120ms gacha ruxsat etiladi (Inson qo'lda butun matnni 120ms da tera olmaydi).
+      if (avgInterval > 120) {
         triggerManualLockout();
         return;
       }
 
       // 4. Belgilar orasidagi eng katta uzilish (gap) tekshiruvi:
-      // Bluetooth va simsiz skanerlar paketlar orasida 60-85ms gacha uzilish qilishi mumkin.
-      // Shuning uchun maksimal uzilish 95ms gacha ruxsat etiladi (inson qo'li bilan 95ms dan tez yozib bo'lmaydi).
+      // Bluetooth va kichik skanerlar paketlar orasida 50-180ms gacha uzilish qilishi mumkin (BLE connection interval).
+      // Shuning uchun maksimal uzilish 280ms gacha ruxsat etiladi (inson qo'li bilan 280ms dan tez pauzasiz yoza olmaydi).
       for (let i = 1; i < times.length; i++) {
-        if (times[i] - times[i - 1] > 95) {
+        if (times[i] - times[i - 1] > 280) {
           triggerManualLockout();
           return;
         }
       }
 
       // 5. Umumiy oqim vaqti tekshiruvi:
-      const maxAllowedDuration = chars.length * 65 + 350;
+      const maxAllowedDuration = chars.length * 120 + 600;
       if (totalDuration > maxAllowedDuration) {
         triggerManualLockout();
         return;
@@ -499,91 +527,121 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     [triggerManualLockout, handleBadgeScanned, handleTableScanned]
   );
 
-  // Generic keydown handler for strict hardware scanner velocity detection
-  const handleScannerKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    target: 'badge' | 'table'
-  ) => {
-    // 0. LOCKOUT ACTIVE: Blok holatida barcha klaviatura signallari to'liq yo'qotiladi!
-    if (isLockedOutRef.current || lockoutRemaining > 0) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-
-    // 1. Block Paste (Ctrl+V / Cmd+V)
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
-      e.preventDefault();
-      triggerManualLockout();
-      return;
-    }
-
-    // 2. Block holding down keys (Key Repeat on keyboard)
-    if (e.repeat) {
-      e.preventDefault();
-      triggerManualLockout();
-      return;
-    }
-
-    // 3. Allow browser Escape
-    if (e.key === 'Escape') {
-      return;
-    }
-
-    // 4. STRICT ANTI-MANUAL:
-    // Klaviaturadan biror harf DOM inputga tushmasligi uchun preventDefault
-    e.preventDefault();
-
-    const bufferRef = target === 'badge' ? nameBufferRef : tableBufferRef;
-    const now = Date.now();
-
-    // 5. Skaner Enter tugmasi bilan yakunlaganda (Hardware Scanner Enter Suffix)
-    if (e.key === 'Enter') {
-      if (bufferRef.current.timer) {
-        clearTimeout(bufferRef.current.timer);
-        bufferRef.current.timer = null;
-      }
-
-      const snapshot = {
-        chars: [...bufferRef.current.chars],
-        times: [...bufferRef.current.times],
-      };
-      bufferRef.current = { chars: [], times: [], timer: null };
-
-      // Agar bufer bo'sh bo'lsa:
-      // Ko'pgina skanerlar oxirida CR+LF (2 ta ketma-ket Enter) yuboradi!
-      // Bo'sh Enter kelganda bloklash KERAK EMAS — shunchaki e'tiborsiz qoldiriladi!
-      if (snapshot.chars.length === 0) {
+  // Universal Global Hardware Scanner Listener:
+  // Kichik va katta skanerlar qayerda (input ichida yoki fokus yo'qolganda) skanerlansa ham,
+  // 100% barcha skan signallarini tutib oladi va to'g'ri maydonga kiritadi.
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 0. LOCKOUT ACTIVE: Blok holatida barcha klaviatura signallari to'liq yo'qotiladi!
+      if (isLockedOutRef.current || lockoutRemaining > 0) {
+        e.preventDefault();
+        e.stopPropagation();
         return;
       }
 
-      validateAndCommitScannerBuffer(target, snapshot);
-      return;
-    }
-
-    // 6. Belgilarni yig'ish (harflar, bo'sh joy, maxsus belgilar)
-    const char = getAsciiCharFromEvent(e);
-    if (char && char.length === 1) {
-      bufferRef.current.chars.push(char);
-      bufferRef.current.times.push(now);
-
-      if (bufferRef.current.timer) {
-        clearTimeout(bufferRef.current.timer);
+      // 1. Allow browser Escape
+      if (e.key === 'Escape') {
+        return;
       }
 
-      // Harflar oqimi tugashini kutish (160ms):
-      // Skaner o'z oqimini 160ms ichida yuborib bo'ladi.
-      bufferRef.current.timer = setTimeout(() => {
+      // 2. Block Paste (Ctrl+V / Cmd+V)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+        e.preventDefault();
+        triggerManualLockout();
+        return;
+      }
+
+      // 3. Block holding down keys (Key Repeat on keyboard)
+      if (e.repeat) {
+        e.preventDefault();
+        triggerManualLockout();
+        return;
+      }
+
+      // 4. Qaysi maydonga qabul qilinishini aniqlash:
+      const target: 'badge' | 'table' | null = !isNameScannedRef.current
+        ? 'badge'
+        : !isTableScannedRef.current
+        ? 'table'
+        : null;
+
+      // Agar xodim ham, stol ham skanerlab bo'lingan bo'lsa:
+      if (!target) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+          e.preventDefault();
+          if (nameValRef.current && tableValRef.current && selectedShiftRef.current) {
+            performLogin(nameValRef.current, tableValRef.current, selectedShiftRef.current);
+          }
+        }
+        return;
+      }
+
+      // STRICT ANTI-MANUAL:
+      // Klaviaturadan biror harf DOM inputga to'g'ridan-to'g'ri tushmasligi uchun preventDefault
+      e.preventDefault();
+
+      const bufferRef = scannerBufferRef;
+      const now = Date.now();
+
+      // 5. Skaner tugatish signallari: Enter (13), Tab (9), Return
+      const isTerminator =
+        e.key === 'Enter' ||
+        e.key === 'Tab' ||
+        e.key === 'Return' ||
+        e.keyCode === 13 ||
+        e.keyCode === 9;
+
+      if (isTerminator) {
+        if (bufferRef.current.timer) {
+          clearTimeout(bufferRef.current.timer);
+          bufferRef.current.timer = null;
+        }
+
         const snapshot = {
           chars: [...bufferRef.current.chars],
           times: [...bufferRef.current.times],
         };
         bufferRef.current = { chars: [], times: [], timer: null };
 
+        // Agar bufer bo'sh bo'lsa (masalan CR+LF, ikkinchi Enter yoki Tab):
+        // Bo'sh terminatorda bloklash berilmaydi!
+        if (snapshot.chars.length === 0) {
+          return;
+        }
+
         validateAndCommitScannerBuffer(target, snapshot);
-      }, 160);
-    }
-  };
+        return;
+      }
+
+      // 6. Belgilarni yig'ish (harflar, bo'sh joy, maxsus belgilar)
+      const char = getAsciiCharFromEvent(e);
+      if (char && char.length === 1) {
+        bufferRef.current.chars.push(char);
+        bufferRef.current.times.push(now);
+
+        if (bufferRef.current.timer) {
+          clearTimeout(bufferRef.current.timer);
+        }
+
+        // Harflar oqimi tugashini kutish (300ms):
+        // Kichik va Bluetooth skanerlar uchun 300ms sukut yetarli va barqaror
+        bufferRef.current.timer = setTimeout(() => {
+          const snapshot = {
+            chars: [...bufferRef.current.chars],
+            times: [...bufferRef.current.times],
+          };
+          bufferRef.current = { chars: [], times: [], timer: null };
+
+          validateAndCommitScannerBuffer(target, snapshot);
+        }, 300);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown, true);
+    };
+  }, [lockoutRemaining, performLogin, triggerManualLockout, validateAndCommitScannerBuffer]);
 
   // Handle Shift Select: faqat smenani belgilaydi, avtomatik kiritib yubormaydi!
   const handleShiftSelect = (shiftId: ShiftId) => {
@@ -725,7 +783,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                   disabled={lockoutRemaining > 0}
                   readOnly={false}
                   onChange={(e) => e.preventDefault()}
-                  onKeyDown={(e) => handleScannerKeyDown(e, 'badge')}
+                  onKeyDown={(e) => e.preventDefault()}
                   onPaste={(e) => {
                     e.preventDefault();
                     triggerManualLockout();
@@ -821,7 +879,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                   disabled={!isNameScanned || lockoutRemaining > 0}
                   readOnly={false}
                   onChange={(e) => e.preventDefault()}
-                  onKeyDown={(e) => handleScannerKeyDown(e, 'table')}
+                  onKeyDown={(e) => e.preventDefault()}
                   onPaste={(e) => {
                     e.preventDefault();
                     triggerManualLockout();

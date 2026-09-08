@@ -183,8 +183,9 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
       const currentTime = Date.now();
       const char = e.key;
+      const isTerminator = char === 'Enter' || char === 'Tab' || e.keyCode === 13 || e.keyCode === 9;
 
-      if (char === 'Enter') {
+      if (isTerminator) {
         if (buffer.trim().length > 1) {
           const scanned = buffer.trim();
           buffer = '';
@@ -216,7 +217,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
         return;
       }
 
-      if (currentTime - lastKeyTime > 80) {
+      if (currentTime - lastKeyTime > 250) {
         buffer = '';
       }
 

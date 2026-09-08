@@ -49,8 +49,9 @@ export const BoxScanner: React.FC<BoxScannerProps> = ({
 
       const currentTime = Date.now();
       const char = e.key;
+      const isTerminator = char === 'Enter' || char === 'Tab' || e.keyCode === 13 || e.keyCode === 9;
 
-      if (char === 'Enter') {
+      if (isTerminator) {
         if (buffer.trim().length > 1) {
           const scannedCode = buffer.trim();
           buffer = '';
@@ -60,7 +61,7 @@ export const BoxScanner: React.FC<BoxScannerProps> = ({
         return;
       }
 
-      if (currentTime - lastKeyTime > 80) {
+      if (currentTime - lastKeyTime > 250) {
         buffer = '';
       }
 
