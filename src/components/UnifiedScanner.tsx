@@ -488,11 +488,28 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-start">
           {/* FIELD 1: GRUZAMESTA RAQAMI (Qaysi Gruzamestadan chiqdi) */}
           <div className="space-y-1">
-            <div className="h-5 flex items-center">
-              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 truncate">
+            <div className="h-6 flex items-center justify-between gap-1.5">
+              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 min-w-0 truncate">
                 <Package className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">1. {language === 'uz' ? 'Qaysi Gruzamestadan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
               </label>
+              {/* Quick button: Без грузоместа (Compact Top Header Button) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setBoxNumber('БЕЗ ГРУЗОМЕСТА');
+                  soundManager.playItemScanSound();
+                  setTimeout(() => pvzRef.current?.focus(), 60);
+                }}
+                className={`text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-md transition-all flex items-center space-x-1 cursor-pointer shrink-0 border whitespace-nowrap shadow-xs active:scale-95 ${
+                  boxNumber === 'БЕЗ ГРУЗОМЕСТА'
+                    ? 'bg-amber-500/25 text-amber-300 border-amber-500/60 shadow-amber-900/20'
+                    : 'bg-[#222536] hover:bg-amber-500/15 text-slate-300 hover:text-amber-300 border-[#2e3347] hover:border-amber-500/40'
+                }`}
+                title={language === 'uz' ? 'Gruzamestasiz' : 'Без грузоместа'}
+              >
+                <span>🚫 {language === 'uz' ? 'Gruzamestasiz' : 'Без грузоместа'}</span>
+              </button>
             </div>
             <input
               ref={boxRef}
@@ -519,27 +536,11 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               className="w-full px-3.5 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all uppercase"
               autoComplete="off"
             />
-            {/* Quick button: Без грузоместа */}
-            <button
-              type="button"
-              onClick={() => {
-                setBoxNumber('БЕЗ ГРУЗОМЕСТА');
-                soundManager.playItemScanSound();
-                setTimeout(() => pvzRef.current?.focus(), 60);
-              }}
-              className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-[0.99] border shadow-sm ${
-                boxNumber === 'БЕЗ ГРУЗОМЕСТА'
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-amber-900/20'
-                  : 'bg-[#222536] hover:bg-amber-500/10 text-slate-300 hover:text-amber-300 border-[#2e3347] hover:border-amber-500/40'
-              }`}
-            >
-              <span>🚫 Без грузоместа</span>
-            </button>
           </div>
 
           {/* FIELD 2: PVZ INPUT WITH SMART AUTOCOMPLETE */}
           <div ref={pvzContainerRef} className="space-y-1 relative">
-            <div className="h-5 flex items-center">
+            <div className="h-6 flex items-center">
               <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 truncate">
                 <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">2. {language === 'uz' ? 'PVZ' : 'ПВЗ'}</span>
@@ -623,7 +624,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
           {/* FIELD 3: TOVAR SHTRIX-KODI */}
           <div className="space-y-1">
-            <div className="h-5 flex items-center justify-between">
+            <div className="h-6 flex items-center justify-between">
               <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 truncate">
                 <Barcode className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">3. {language === 'uz' ? 'Tovar Barcode' : 'Штрих-код'}</span>
