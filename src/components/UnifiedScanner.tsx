@@ -540,11 +540,26 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
           {/* FIELD 2: PVZ INPUT WITH SMART AUTOCOMPLETE */}
           <div ref={pvzContainerRef} className="space-y-1 relative">
-            <div className="h-6 flex items-center">
-              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 truncate">
+            <div className="h-6 flex items-center justify-between gap-1.5">
+              <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1 min-w-0 truncate">
                 <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">2. {language === 'uz' ? 'PVZ' : 'ПВЗ'}</span>
               </label>
+              {/* Quick button: Инцидент (Compact Top Header Button) */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleSelectPvz('ИНЦИДЕНТ');
+                }}
+                className={`text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-md transition-all flex items-center space-x-1 cursor-pointer shrink-0 border whitespace-nowrap shadow-xs active:scale-95 ${
+                  pvz === 'ИНЦИДЕНТ'
+                    ? 'bg-rose-500/25 text-rose-300 border-rose-500/60 shadow-rose-900/20'
+                    : 'bg-[#222536] hover:bg-rose-500/15 text-slate-300 hover:text-rose-300 border-[#2e3347] hover:border-rose-500/40'
+                }`}
+                title={language === 'uz' ? 'Insident' : 'Инцидент'}
+              >
+                <span>⚠️ {language === 'uz' ? 'Insident' : 'Инцидент'}</span>
+              </button>
             </div>
 
             <div className="relative">
