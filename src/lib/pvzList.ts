@@ -90,6 +90,7 @@ const CITY_DICT: Record<string, { ru: string; uz: string; region: string }> = {
   'ИСК': { ru: 'Искандар', uz: 'Iskandar', region: 'tashkent' },
   'СРЙ': { ru: 'Сарыасия', uz: 'Sariosiyo', region: 'regions' },
   'ККН': { ru: 'Коканд', uz: 'Qoʻqon', region: 'fergana' },
+  'КМШ': { ru: 'Камаши', uz: 'Qamashi', region: 'regions' },
 };
 
 // Lotin -> Kirill o'girish
