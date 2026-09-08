@@ -493,7 +493,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 <Package className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">1. {language === 'uz' ? 'Qaysi Gruzamestadan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
               </label>
-              {/* Quick button: Без грузоместа (Noticeable Prominent Button) */}
+              {/* Quick button: Без грузоместа (Noticeable Prominent Button - Fixed Russian) */}
               <button
                 type="button"
                 onClick={() => {
@@ -506,9 +506,9 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                     ? 'bg-amber-500 text-slate-950 font-black border-amber-300 shadow-md shadow-amber-500/30 ring-2 ring-amber-400/40'
                     : 'bg-amber-950/60 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border-amber-500/60 hover:border-amber-400 shadow-amber-950/40'
                 }`}
-                title={language === 'uz' ? 'Gruzamestasiz' : 'Без грузоместа'}
+                title="Без грузоместа"
               >
-                <span>🚫 {language === 'uz' ? 'Gruzamestasiz' : 'Без грузоместа'}</span>
+                <span>🚫 Без грузоместа</span>
               </button>
             </div>
             <input
@@ -545,7 +545,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">2. {language === 'uz' ? 'PVZ' : 'ПВЗ'}</span>
               </label>
-              {/* Quick button: Инцидент (Noticeable Prominent Button) */}
+              {/* Quick button: Инцидент (Noticeable Prominent Button - Fixed Russian) */}
               <button
                 type="button"
                 onClick={() => {
@@ -556,9 +556,9 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                     ? 'bg-rose-600 text-white font-black border-rose-300 shadow-md shadow-rose-600/30 ring-2 ring-rose-400/40'
                     : 'bg-rose-950/60 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border-rose-500/60 hover:border-rose-400 shadow-rose-950/40'
                 }`}
-                title={language === 'uz' ? 'Insident' : 'Инцидент'}
+                title="Инцидент"
               >
-                <span>⚠️ {language === 'uz' ? 'Insident' : 'Инцидент'}</span>
+                <span>⚠️ Инцидент</span>
               </button>
             </div>
 
