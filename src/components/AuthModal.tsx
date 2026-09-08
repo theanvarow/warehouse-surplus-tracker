@@ -150,19 +150,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const [isManualShake, setIsManualShake] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Lockout State: Qo'lda yozishga urinilganda tizimni 3 soniyaga to'liq muzlatish
+  // Lockout State: Qo'lda yozishga urinilganda tizimni 2 soniyaga muzlatish
   const [lockoutRemaining, setLockoutRemaining] = useState<number>(0);
   const isLockedOutRef = useRef<boolean>(false);
   const lockoutIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCommitTimeRef = useRef<number>(0);
 
   // Input refs
   const nameRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLInputElement>(null);
 
   // Hardware Scanner Buffers:
-  // Hardware scanners send characters in rapid bursts (< 25ms per character).
-  // Human typing is slow (> 80ms).
-  // We completely preventDefault on keydown, so manual typing CANNOT type anything into the input!
+  // Har qanday turdagi skanerlar (simli USB, simsiz 2.4G, Bluetooth, 2D QR skanerlar) oqimini yig'adi
   const nameBufferRef = useRef<ScannerBuffer>({ chars: [], times: [], timer: null });
   const tableBufferRef = useRef<ScannerBuffer>({ chars: [], times: [], timer: null });
 
@@ -174,18 +173,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     tableBufferRef.current = { chars: [], times: [], timer: null };
   }, []);
 
-  // Trigger manual typing lockout (3 seconds penalty lockout)
+  // Trigger manual typing lockout (2 seconds penalty lockout)
   const triggerManualLockout = useCallback(
     (customMsg?: string) => {
+      // Agar hozirgina skaner qabul qilingan bo'lsa (masalan CR+LF ikkinchi Enter), xatolik berilmaydi
+      if (Date.now() - lastCommitTimeRef.current < 600) {
+        return;
+      }
+
       clearBuffers();
       isLockedOutRef.current = true;
-      setLockoutRemaining(3);
+      setLockoutRemaining(2);
 
       const msg =
         customMsg ||
         (language === 'uz'
-          ? "⚠️ Qo'lda kiritish taqiqlangan! Tizim 3 soniyaga bloklandi. Faqat apparat skaneridan foydalaning!"
-          : '⚠️ Ручной ввод запрещен! Система заблокирована на 3 секунды. Используйте только сканер!');
+          ? "⚠️ Qo'lda kiritish taqiqlangan! Faqat apparat skaneridan foydalaning."
+          : '⚠️ Ручной ввод запрещен! Пожалуйста, используйте только сканер.');
 
       setError(msg);
       setIsManualShake(true);
@@ -196,7 +200,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         clearInterval(lockoutIntervalRef.current);
       }
 
-      let timeLeft = 3;
+      let timeLeft = 2;
       lockoutIntervalRef.current = setInterval(() => {
         timeLeft -= 1;
         setLockoutRemaining(timeLeft);
@@ -237,8 +241,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
     (empName: string, tblNum: string, shift: ShiftId) => {
       const cleanEmp = empName.trim();
       const cleanTbl = tblNum.trim();
-      if (!cleanEmp || cleanEmp.length < 4) return;
-      if (!cleanTbl || cleanTbl.length < 2) return;
+      if (!cleanEmp || cleanEmp.length < 2) return;
+      if (!cleanTbl || cleanTbl.length < 1) return;
       if (!isNameScanned || !isTableScanned) return;
 
       setIsLoggingIn(true);
@@ -318,8 +322,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const handleBadgeScanned = useCallback(
     (scannedVal: string) => {
       let clean = sanitizeScannedString(scannedVal);
-      // Xodim QR kodi kamida 4 belgi bo'lishi shart va tasodifiy klaviatura spamini rad etish
-      if (!clean || clean.length < 4 || /^(asdf|qwer|zxcv|1234|йцук|фыва)/i.test(clean)) {
+      // Xodim QR kodi kamida 2-3 belgi bo'lishi shart va tasodifiy klaviatura spamini rad etish
+      if (!clean || clean.length < 2 || /^(asdf|qwer|zxcv|1234|йцук|фыва|qwerty)/i.test(clean)) {
         triggerManualLockout();
         return;
       }
@@ -375,7 +379,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         clean = convertRuLayoutToEn(clean).toUpperCase();
       }
 
-      if (!clean || clean.length < 2 || /^(ASDF|QWER|ZXCV|1234)/i.test(clean)) {
+      if (!clean || clean.length < 1 || /^(ASDF|QWER|ZXCV|1234)/i.test(clean)) {
         triggerManualLockout();
         return;
       }
@@ -431,16 +435,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   };
 
   // Apparat skaneri buferini tekshirish va tasdiqlash:
-  // Qat'iy tezlik va uzluksizlik talabi — qo'lda qanchalik tez bosilsa ham (ko'p marta urinsa ham) o'tkazilmaydi!
+  // Barcha apparat skanerlari (simli USB, simsiz 2.4G, Bluetooth, 2D QR skanerlar) uchun universal moslashtirilgan
   const validateAndCommitScannerBuffer = useCallback(
     (target: 'badge' | 'table', snapshot: { chars: string[]; times: number[] }) => {
       const chars = snapshot.chars;
       const times = snapshot.times;
 
       // 1. Kamida talab qilinadigan belgilar soni:
-      // Xodim QR kodi kamida 6 ta belgi bo'lishi shart! (Haqiqiy FIO QR kodlari 15-50 belgi)
-      // Stol kodi kamida 3 ta belgi bo'lishi shart! (ST-01, STOL-1, 001)
-      const minLen = target === 'badge' ? 6 : 3;
+      // Xodim QR kodi kamida 3 ta belgi
+      // Stol kodi kamida 2 ta belgi (masalan: 01, ST-01, STOL-1)
+      const minLen = target === 'badge' ? 3 : 2;
       if (chars.length < minLen) {
         triggerManualLockout();
         return;
@@ -448,7 +452,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
 
       // 2. Bir xil harflarni ushlab turish yoki takrorlashni rad etish
       const uniqueChars = new Set(chars);
-      if (uniqueChars.size < (target === 'badge' ? 3 : 2)) {
+      if (uniqueChars.size < 2 && chars.length > 2) {
         triggerManualLockout();
         return;
       }
@@ -456,32 +460,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       const totalDuration = times[times.length - 1] - times[0];
       const avgInterval = totalDuration / Math.max(times.length - 1, 1);
 
-      // 3. Qat'iy apparat skaner tezligi tekshiruvi:
-      // Apparat skanerlari harflarni 5ms - 25ms oralig'ida yuboradi.
-      // O'rtacha oraliq tezligi 35ms dan oshsa - bu inson tomonidan terilgan deb topiladi!
-      if (avgInterval > 35) {
+      // 3. Apparat skaner tezligi tekshiruvi:
+      // Barcha apparat skanerlari (simli USB, simsiz 2.4G, Bluetooth, 2D QR)
+      // harflarni 5ms - 60ms oralig'ida yuboradi.
+      // Inson klaviaturada esa 120ms - 400ms da teradi.
+      // O'rtacha oraliq tezligi 65ms dan oshsa - qo'lda terilgan deb hisoblanadi!
+      if (avgInterval > 65) {
         triggerManualLockout();
         return;
       }
 
       // 4. Belgilar orasidagi eng katta uzilish (gap) tekshiruvi:
-      // Skanerda barcha harflar bir tekis oqim bilan keladi.
-      // Har qanday bitta belgi orasidagi uzilish 50ms dan oshsa - inson tergan bo'ladi!
+      // Bluetooth va simsiz skanerlar paketlar orasida 60-85ms gacha uzilish qilishi mumkin.
+      // Shuning uchun maksimal uzilish 95ms gacha ruxsat etiladi (inson qo'li bilan 95ms dan tez yozib bo'lmaydi).
       for (let i = 1; i < times.length; i++) {
-        if (times[i] - times[i - 1] > 50) {
+        if (times[i] - times[i - 1] > 95) {
           triggerManualLockout();
           return;
         }
       }
 
       // 5. Umumiy oqim vaqti tekshiruvi:
-      const maxAllowedDuration = chars.length * 35 + 180;
+      const maxAllowedDuration = chars.length * 65 + 350;
       if (totalDuration > maxAllowedDuration) {
         triggerManualLockout();
         return;
       }
 
       // Faqat haqiqiy apparat skaneri tasdiqlandi!
+      lastCommitTimeRef.current = Date.now();
       const scannedString = chars.join('');
       if (target === 'badge') {
         handleBadgeScanned(scannedString);
@@ -543,9 +550,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       };
       bufferRef.current = { chars: [], times: [], timer: null };
 
-      // Bo'sh holda Enter bosilsa (masalan, klaviaturadan Enter urilsa) -> darhol bloklash!
+      // Agar bufer bo'sh bo'lsa:
+      // Ko'pgina skanerlar oxirida CR+LF (2 ta ketma-ket Enter) yuboradi!
+      // Bo'sh Enter kelganda bloklash KERAK EMAS — shunchaki e'tiborsiz qoldiriladi!
       if (snapshot.chars.length === 0) {
-        triggerManualLockout();
         return;
       }
 
@@ -563,8 +571,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         clearTimeout(bufferRef.current.timer);
       }
 
-      // Harflar oqimi tugashini kutish (140ms):
-      // Skaner o'z oqimini 140ms ichida yuborib bo'ladi.
+      // Harflar oqimi tugashini kutish (160ms):
+      // Skaner o'z oqimini 160ms ichida yuborib bo'ladi.
       bufferRef.current.timer = setTimeout(() => {
         const snapshot = {
           chars: [...bufferRef.current.chars],
@@ -573,7 +581,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         bufferRef.current = { chars: [], times: [], timer: null };
 
         validateAndCommitScannerBuffer(target, snapshot);
-      }, 140);
+      }, 160);
     }
   };
 
@@ -915,12 +923,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
           ) : isNameScanned && isTableScanned ? (
             <button
               type="button"
-              disabled={isLoggingIn || !name || !tableNumber || name.trim().length < 4 || tableNumber.trim().length < 2}
+              disabled={isLoggingIn || !name || !tableNumber || name.trim().length < 2 || tableNumber.trim().length < 1}
               onClick={() => {
                 if (isLoggingIn) return;
                 if (!isNameScanned || !isTableScanned) return;
-                if (!name || name.trim().length < 4) return;
-                if (!tableNumber || tableNumber.trim().length < 2) return;
+                if (!name || name.trim().length < 2) return;
+                if (!tableNumber || tableNumber.trim().length < 1) return;
                 if (!selectedShift) {
                   setError(
                     language === 'uz'
