@@ -486,10 +486,10 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
         {/* 3 Simple, Compact Inputs in 1 Clean Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-start">
-          {/* FIELD 1: GRUZAMESTA RAQAMI (Qaysi Gruzamestadan chiqdi) */}
+          {/* FIELD 1: BOX NUMBER INPUT */}
           <div className="space-y-1.5">
             {/* Quick button row above label: Без грузоместа */}
-            <div className="h-7 flex items-center">
+            <div className="h-8 flex items-center">
               <button
                 type="button"
                 onClick={() => {
@@ -497,7 +497,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   soundManager.playItemScanSound();
                   setTimeout(() => pvzRef.current?.focus(), 60);
                 }}
-                className={`text-xs font-black px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer border whitespace-nowrap shadow-sm active:scale-95 hover:scale-[1.02] ${
+                className={`h-full text-xs font-black px-3.5 py-1 rounded-lg transition-all flex items-center space-x-1.5 cursor-pointer border whitespace-nowrap shadow-sm active:scale-95 hover:scale-[1.02] ${
                   boxNumber === 'БЕЗ ГРУЗОМЕСТА'
                     ? 'bg-amber-500 text-slate-950 font-black border-amber-300 shadow-md shadow-amber-500/30 ring-2 ring-amber-400/40'
                     : 'bg-amber-950/60 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border-amber-500/60 hover:border-amber-400 shadow-amber-950/40'
@@ -545,14 +545,14 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
           {/* FIELD 2: PVZ INPUT WITH SMART AUTOCOMPLETE */}
           <div ref={pvzContainerRef} className="space-y-1.5 relative">
-            {/* Quick button row above label: Инцидент & Нет ПВЗ */}
-            <div className="h-7 flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
+            {/* Quick button row above label: Инцидент & Нет ПВЗ (Equal width and height) */}
+            <div className="h-8 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   handleSelectPvz('ИНЦИДЕНТ');
                 }}
-                className={`text-xs font-black px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer border whitespace-nowrap shadow-sm active:scale-95 hover:scale-[1.02] ${
+                className={`flex-1 h-full text-xs font-black px-3 py-1 rounded-lg transition-all flex items-center justify-center space-x-1.5 cursor-pointer border whitespace-nowrap shadow-sm active:scale-95 hover:scale-[1.02] ${
                   pvz === 'ИНЦИДЕНТ'
                     ? 'bg-rose-600 text-white font-black border-rose-300 shadow-md shadow-rose-600/30 ring-2 ring-rose-400/40'
                     : 'bg-rose-950/60 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 border-rose-500/60 hover:border-rose-400 shadow-rose-950/40'
@@ -567,7 +567,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 onClick={() => {
                   handleSelectPvz('НЕТ ПВЗ');
                 }}
-                className={`text-xs font-black px-2.5 py-1 rounded-lg transition-all flex items-center space-x-1 cursor-pointer border whitespace-nowrap shadow-sm active:scale-95 hover:scale-[1.02] ${
+                className={`flex-1 h-full text-xs font-black px-3 py-1 rounded-lg transition-all flex items-center justify-center space-x-1.5 cursor-pointer border whitespace-nowrap shadow-sm active:scale-95 hover:scale-[1.02] ${
                   pvz === 'НЕТ ПВЗ'
                     ? 'bg-amber-500 text-slate-950 font-black border-amber-300 shadow-md shadow-amber-500/30 ring-2 ring-amber-400/40'
                     : 'bg-amber-950/60 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border-amber-500/60 hover:border-amber-400 shadow-amber-950/40'
@@ -599,8 +599,8 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   setSelectedPvzIndex(-1);
                 }}
                 onKeyDown={handlePvzKeyDown}
-                placeholder={language === 'uz' ? 'Bosh harf yoki raqam (masalan: tash, 12, gul...)' : 'Код или номер (напр: таш, 12, гул...)'}
-                className="w-full pl-3.5 pr-8 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-bold text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                placeholder={language === 'uz' ? 'Kod yoki nom (mas: tosh, 12, gul)' : 'Код или номер (напр: таш, 12, гул)'}
+                className="w-full px-3.5 py-3 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all uppercase"
                 autoComplete="off"
               />
 
@@ -609,54 +609,53 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   type="button"
                   onClick={() => {
                     setPvz('');
-                    const matches = searchPvz('', 30);
-                    setPvzSuggestions(matches);
-                    setIsPvzDropdownOpen(true);
-                    setSelectedPvzIndex(-1);
+                    setIsPvzDropdownOpen(false);
                     pvzRef.current?.focus();
                   }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-1 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            {/* Smart Suggestions Floating Dropdown */}
-            {isPvzDropdownOpen && pvzSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-[#1b1e2c] border border-indigo-500/50 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md max-h-72 overflow-y-auto divide-y divide-[#282d3f] animate-fade-in">
-                <div className="px-3 py-1.5 bg-[#141622] text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center justify-between border-b border-[#282d3f]">
-                  <span>{language === 'uz' ? 'Mos keluvchi PVZlar' : 'Подходящие ПВЗ'}</span>
-                  <span className="text-slate-400 font-mono">{pvzSuggestions.length} {language === 'uz' ? 'ta' : 'вариантов'}</span>
-                </div>
-                {pvzSuggestions.map((item, idx) => {
-                  const isSelected = selectedPvzIndex === idx;
-                  return (
-                    <button
-                      key={item.code + idx}
-                      type="button"
-                      onClick={() => handleSelectPvz(item.code)}
-                      onMouseEnter={() => setSelectedPvzIndex(idx)}
-                      className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-indigo-600/30 text-white font-black'
-                          : 'hover:bg-[#25283a] text-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2.5">
-                        <span className="font-mono text-sm font-black text-indigo-400 bg-indigo-950/80 border border-indigo-700/60 px-2 py-0.5 rounded-md">
-                          {item.code}
+            {/* Autocomplete Dropdown */}
+            {isPvzDropdownOpen && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-[#13151f] border-2 border-indigo-500/80 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-800">
+                {pvzSuggestions.length === 0 ? (
+                  <div className="p-3 text-center text-slate-400 text-xs font-medium">
+                    {language === 'uz' ? 'Hech qanday PVZ topilmadi' : 'ПВЗ не найден'}
+                  </div>
+                ) : (
+                  pvzSuggestions.map((item, index) => {
+                    const isSelected = index === selectedPvzIndex;
+                    return (
+                      <button
+                        key={item.code}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectPvz(item.code);
+                        }}
+                        className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between text-xs transition-colors ${
+                          isSelected ? 'bg-indigo-600/30 text-white font-bold' : 'hover:bg-slate-800/60 text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2.5">
+                          <span className="font-mono text-sm font-black text-indigo-400 bg-indigo-950/80 border border-indigo-700/60 px-2 py-0.5 rounded-md">
+                            {item.code}
+                          </span>
+                          <span className="text-xs text-slate-300 font-medium truncate max-w-[180px] sm:max-w-xs">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-bold uppercase shrink-0">
+                          {item.city}
                         </span>
-                        <span className="text-xs text-slate-300 font-medium truncate max-w-[180px] sm:max-w-xs">
-                          {item.name}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-400 font-bold uppercase shrink-0">
-                        {item.city}
-                      </span>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })
+                )}
               </div>
             )}
           </div>
@@ -664,9 +663,9 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
           {/* FIELD 3: TOVAR SHTRIX-KODI */}
           <div className="space-y-1.5">
             {/* Quick status row above label: Last scanned barcode */}
-            <div className="h-7 flex items-center">
+            <div className="h-8 flex items-center">
               {lastScannedBarcode ? (
-                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-1 rounded-lg truncate shadow-xs">
+                <span className="h-full flex items-center text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-lg truncate shadow-xs">
                   ✓ {lastScannedBarcode}
                 </span>
               ) : (
