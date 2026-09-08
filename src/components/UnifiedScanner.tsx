@@ -821,29 +821,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 <span className="whitespace-nowrap">{language === 'uz' ? '📦 Qayta joylangan Korup' : '📦 Куда переложен'}</span>
                 <span className="text-rose-400 font-black text-sm">*</span>
               </label>
-              <div className="flex items-center space-x-3 shrink-0">
-                {boxNumber.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const cleanCurrentBox = boxNumber.trim().replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase();
-                      if (!cleanCurrentBox.startsWith('80')) {
-                        soundManager.playErrorSound();
-                        alert(
-                          language === 'uz'
-                            ? 'Ushbu korup raqami 80 bilan boshlanmagan! Qayta joylangan korup faqat 80 bilan boshlanishi shart.'
-                            : 'Текущий короб не начинается с 80! Короб «Куда переложен» должен начинаться только с 80.'
-                        );
-                        return;
-                      }
-                      setTargetBox(cleanCurrentBox);
-                    }}
-                    className="w-[150px] text-xs font-bold px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95 shadow-sm shrink-0 whitespace-nowrap"
-                    title={language === 'uz' ? 'Tovar yangi korupga o\'tkazilmagan bo\'lsa, shu korup raqamini qo\'yish' : 'Если товар остался в том же коробе'}
-                  >
-                    <span>🔄 {language === 'uz' ? 'Shu korupning o\'zi' : 'В тот же короб'}</span>
-                  </button>
-                )}
+              <div className="flex items-center shrink-0">
                 <span className={`text-xs font-bold shrink-0 min-w-[90px] text-right whitespace-nowrap ${
                   isTargetBoxInvalid
                     ? 'text-rose-400'
