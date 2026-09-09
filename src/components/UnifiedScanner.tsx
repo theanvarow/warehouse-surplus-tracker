@@ -268,6 +268,19 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       return;
     }
 
+    // Tovar shtrix-kodi faqat raqamlardan iborat bo'lishi shart
+    if (!/^\d+$/.test(code)) {
+      soundManager.playErrorSound();
+      alert(
+        language === 'uz'
+          ? '❌ Tovar shtrix-kodi faqat raqamlardan iborat boʻlishi shart!'
+          : '❌ Штрих-код товара должен состоять только из цифр!'
+      );
+      setBarcodeInput('');
+      barcodeRef.current?.focus();
+      return;
+    }
+
     if (!boxNumber.trim()) {
       soundManager.playErrorSound();
       alert(language === 'uz' ? 'Iltimos, avval Gruzamesta raqamini kiriting!' : 'Пожалуйста, сначала укажите номер Грузоместа!');
@@ -350,7 +363,17 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
   const handleBarcodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addItemToCurrentBox(barcodeInput);
+    const clean = barcodeInput.replace(/\D/g, '').trim();
+    if (!clean) {
+      soundManager.playErrorSound();
+      alert(
+        language === 'uz'
+          ? '❌ Tovar shtrix-kodi faqat raqamlardan iborat boʻlishi shart!'
+          : '❌ Штрих-код товара должен состоять только из цифр!'
+      );
+      return;
+    }
+    addItemToCurrentBox(clean);
   };
 
   // Modify Item Count (+ / -)
@@ -781,21 +804,38 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             </div>
 
             {/* Label row: full text without truncation */}
-            <div className="h-5 flex items-center">
+            <div className="h-5 flex items-center justify-between">
               <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1.5 whitespace-nowrap">
                 <Barcode className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span>3. {language === 'uz' ? 'Tovar Barcode' : 'Штрих-код'}</span>
               </label>
+              {barcodeInput && (
+                <span className={`text-xs font-bold shrink-0 text-right whitespace-nowrap ${
+                  /^\d+$/.test(barcodeInput) ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {/^\d+$/.test(barcodeInput)
+                    ? (language === 'uz' ? '✅ Faqat raqam' : '✅ Только цифры')
+                    : (language === 'uz' ? '❌ Faqat raqam!' : '❌ Только цифры!')}
+                </span>
+              )}
             </div>
 
             <form onSubmit={handleBarcodeSubmit} className="relative flex">
               <input
                 ref={barcodeRef}
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                placeholder={language === 'uz' ? 'Skanerlang...' : 'Сканируйте...'}
-                className="w-full pl-4 pr-24 py-3.5 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-sm sm:text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                onChange={(e) => setBarcodeInput(e.target.value.replace(/\D/g, ''))}
+                placeholder={language === 'uz' ? 'Faqat raqam (skanerlang)...' : 'Только цифры (сканируйте)...'}
+                className={`w-full pl-4 pr-24 py-3.5 bg-[#191b26] border rounded-xl text-white placeholder-slate-500 font-mono text-sm sm:text-base font-black focus:outline-none focus:ring-2 transition-all ${
+                  barcodeInput && !/^\d+$/.test(barcodeInput)
+                    ? 'border-rose-500 focus:border-rose-400 focus:ring-rose-500/30'
+                    : barcodeInput && /^\d+$/.test(barcodeInput)
+                    ? 'border-emerald-500 focus:border-emerald-400 focus:ring-emerald-500/30'
+                    : 'border-[#2e3347] focus:border-indigo-500 focus:ring-indigo-500/20'
+                }`}
                 autoComplete="off"
               />
               <button
