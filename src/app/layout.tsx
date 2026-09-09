@@ -8,13 +8,15 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-      { url: '/app-logo.jpg', sizes: 'any' },
-      { url: '/app-logo.jpg', type: 'image/jpeg' },
+      { url: '/app-logo.png', sizes: 'any', type: 'image/png' },
+      { url: '/app-logo.jpg', sizes: 'any', type: 'image/jpeg' },
+      { url: '/favicon.ico', sizes: 'any' },
     ],
     apple: [
-      { url: '/app-logo.jpg' },
+      { url: '/apple-touch-icon.png' },
+      { url: '/apple-touch-icon.jpg' },
     ],
-    shortcut: ['/app-logo.jpg'],
+    shortcut: ['/app-logo.png'],
   },
   openGraph: {
     title: 'VP Pershot - Warehouse Surplus Tracker 📦',

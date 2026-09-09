@@ -100,24 +100,15 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#1f2232]/95 backdrop-blur-md border-b border-[#2e3347] text-slate-100 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-        {/* Left: Official Uzum Logo & Compact Title */}
+        {/* Left: App Scanner Logo & Compact Title */}
         <div className="flex items-center space-x-2.5 shrink-0">
-          <div className="w-10 h-10 rounded-2xl bg-[#7000FF] flex items-center justify-center shadow-lg shadow-purple-600/40 text-white shrink-0">
-            <svg viewBox="0 0 100 100" className="w-6 h-6 fill-current">
-              {/* Official Uzum 'U' symbol with inner vertical cut */}
-              <rect x="43" y="16" width="14" height="34" rx="7" fill="#FFFFFF" />
-              <path
-                d="M 21 34 
-                   L 21 64 
-                   C 21 82, 79 82, 79 64 
-                   L 79 34 
-                   L 66 34 
-                   L 66 63 
-                   C 66 73, 34 73, 34 63 
-                   L 34 34 Z"
-                fill="#FFFFFF"
-              />
-            </svg>
+          <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-indigo-600/30 shrink-0 border border-slate-700/60 bg-white/5 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/app-logo.png"
+              alt="VP Pershot Logo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <div className="flex items-center space-x-2">
