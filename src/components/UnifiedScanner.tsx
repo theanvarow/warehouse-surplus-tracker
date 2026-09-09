@@ -205,7 +205,26 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
           // If source box is empty, fill box first
           if (!boxNumber.trim()) {
-            setBoxNumber(scanned.toUpperCase());
+            const cleanScanned = scanned.toUpperCase().trim();
+            const isValid =
+              cleanScanned.startsWith('85') ||
+              cleanScanned.includes('ГРУЗОМЕСТ') ||
+              cleanScanned.includes('ГРУЗАМЕСТ') ||
+              cleanScanned.includes('GRUZ');
+
+            if (!isValid) {
+              soundManager.playErrorSound();
+              alert(
+                language === 'uz'
+                  ? '❌ Gruzamesta raqami faqat 85 bilan boshlanishi yoki «Без грузоместа» boʻlishi shart!'
+                  : '❌ Номер грузоместа должен начинаться с 85 или быть «Без грузоместа»!'
+              );
+              setBoxNumber('');
+              boxRef.current?.focus();
+              buffer = '';
+              return;
+            }
+            setBoxNumber(cleanScanned);
             soundManager.playBoxScanSound();
             pvzRef.current?.focus();
           } else {
@@ -252,6 +271,24 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     if (!boxNumber.trim()) {
       soundManager.playErrorSound();
       alert(language === 'uz' ? 'Iltimos, avval Gruzamesta raqamini kiriting!' : 'Пожалуйста, сначала укажите номер Грузоместа!');
+      boxRef.current?.focus();
+      return;
+    }
+
+    const cleanBox = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
+    const isValidBox =
+      cleanBox.startsWith('85') ||
+      cleanBox.includes('ГРУЗОМЕСТ') ||
+      cleanBox.includes('ГРУЗАМЕСТ') ||
+      cleanBox.includes('GRUZ');
+    if (!isValidBox) {
+      soundManager.playErrorSound();
+      alert(
+        language === 'uz'
+          ? '❌ Gruzamesta raqami faqat 85 bilan boshlanishi yoki «Без грузоместа» boʻlishi shart!'
+          : '❌ Номер грузоместа должен начинаться с 85 или быть «Без грузоместа»!'
+      );
+      setBoxNumber('');
       boxRef.current?.focus();
       return;
     }
@@ -357,9 +394,19 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
   // Finish Box and send to Google Sheets
   const handleFinishBox = async () => {
     const cleanBox = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
-    if (!cleanBox || cleanBox.length < 2) {
+    const isValidBoxNumber =
+      cleanBox.startsWith('85') ||
+      cleanBox.includes('ГРУЗОМЕСТ') ||
+      cleanBox.includes('ГРУЗАМЕСТ') ||
+      cleanBox.includes('GRUZ');
+
+    if (!cleanBox || !isValidBoxNumber) {
       soundManager.playErrorSound();
-      alert(language === 'uz' ? 'Chiqarilgan Gruzamesta raqamini to\'g\'ri kiriting!' : 'Укажите корректный номер Грузоместа!');
+      alert(
+        language === 'uz'
+          ? '❌ Gruzamesta raqami faqat 85 bilan boshlanishi yoki «Без грузоместа» boʻlishi shart!'
+          : '❌ Номер грузоместа должен начинаться с 85 или быть «Без грузоместа»!'
+      );
       boxRef.current?.focus();
       return;
     }
@@ -440,6 +487,15 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
   };
 
   const totalQuantity = items.reduce((sum, i) => sum + (i.count || 1), 0);
+
+  const cleanBoxNumber = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
+  const isBoxNumberValid =
+    cleanBoxNumber.startsWith('85') ||
+    cleanBoxNumber.includes('ГРУЗОМЕСТ') ||
+    cleanBoxNumber.includes('ГРУЗАМЕСТ') ||
+    cleanBoxNumber.includes('GRUZ');
+  const isBoxNumberInvalid = cleanBoxNumber.length >= 2 && !isBoxNumberValid;
+
   const cleanTargetBox = targetBox.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
   const isTargetBoxValid = cleanTargetBox.length >= 2 && cleanTargetBox.startsWith('80');
   const isTargetBoxInvalid = cleanTargetBox.length >= 2 && !isTargetBoxValid;
@@ -509,38 +565,87 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             </div>
 
             {/* Label row: full text without truncation */}
-            <div className="h-5 flex items-center">
+            <div className="h-5 flex items-center justify-between">
               <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1.5 whitespace-nowrap">
                 <Package className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span>1. {language === 'uz' ? 'Qaysi Gruzamestadan chiqdi?' : 'Из какого Грузоместа вышел?'}</span>
               </label>
+              {cleanBoxNumber.length >= 2 && (
+                <span className={`text-xs font-bold shrink-0 text-right whitespace-nowrap ${
+                  isBoxNumberValid ? 'text-emerald-400' : 'text-rose-400'
+                }`}>
+                  {isBoxNumberValid
+                    ? (language === 'uz' ? '✅ Qabul qilindi' : '✅ Принято')
+                    : (language === 'uz' ? '❌ Faqat 85!' : '❌ Только 85!')}
+                </span>
+              )}
             </div>
 
-            <input
-              ref={boxRef}
-              type="text"
-              value={boxNumber}
-              onChange={(e) => setBoxNumber(e.target.value.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase())}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (boxNumber.trim().toUpperCase() === '$BT#CLEAR' || boxNumber.trim().toUpperCase().includes('$BT#CLEAR')) {
-                    setBoxNumber('');
-                    setTargetBox('');
-                    setPvz('');
-                    setBarcodeInput('');
-                    setItems([]);
-                    setLastScannedBarcode(null);
-                    soundManager.playFinishBoxSound();
-                    return;
+            <div className="flex flex-col gap-2">
+              <input
+                ref={boxRef}
+                type="text"
+                value={boxNumber}
+                onChange={(e) => setBoxNumber(e.target.value.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (boxNumber.trim().toUpperCase() === '$BT#CLEAR' || boxNumber.trim().toUpperCase().includes('$BT#CLEAR')) {
+                      setBoxNumber('');
+                      setTargetBox('');
+                      setPvz('');
+                      setBarcodeInput('');
+                      setItems([]);
+                      setLastScannedBarcode(null);
+                      soundManager.playFinishBoxSound();
+                      return;
+                    }
+                    if (!isBoxNumberValid) {
+                      soundManager.playErrorSound();
+                      alert(
+                        language === 'uz'
+                          ? '❌ Gruzamesta raqami faqat 85 bilan boshlanishi yoki «Без грузоместа» boʻlishi shart! (Masalan: 85-000)'
+                          : '❌ Номер грузоместа должен начинаться с 85 или быть «Без грузоместа»! (Напр: 85-000)'
+                      );
+                      setBoxNumber('');
+                      boxRef.current?.focus();
+                      return;
+                    }
+                    pvzRef.current?.focus();
                   }
-                  pvzRef.current?.focus();
-                }
-              }}
-              placeholder={language === 'uz' ? 'Masalan: 85-000' : 'Напр: 85-000'}
-              className="w-full px-4 py-3.5 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all uppercase"
-              autoComplete="off"
-            />
+                }}
+                onBlur={() => {
+                  if (cleanBoxNumber.length > 0 && !isBoxNumberValid) {
+                    soundManager.playErrorSound();
+                    alert(
+                      language === 'uz'
+                        ? '❌ Gruzamesta raqami faqat 85 bilan boshlanishi yoki «Без грузоместа» boʻlishi shart! (Masalan: 85-000)'
+                        : '❌ Номер грузоместа должен начинаться с 85 или быть «Без грузоместа»! (Напр: 85-000)'
+                    );
+                    setBoxNumber('');
+                  }
+                }}
+                placeholder={language === 'uz' ? 'Faqat 85-... (mas: 85-000)' : 'Только 85-... (напр: 85-000)'}
+                className={`w-full px-4 py-3.5 bg-[#191b26] border rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 transition-all uppercase ${
+                  isBoxNumberInvalid
+                    ? 'border-rose-500 text-rose-200 focus:border-rose-400 focus:ring-rose-500/30'
+                    : isBoxNumberValid
+                    ? 'border-emerald-500 text-emerald-100 focus:border-emerald-400 focus:ring-emerald-500/30'
+                    : 'border-[#2e3347] focus:border-indigo-500 focus:ring-indigo-500/20'
+                }`}
+                autoComplete="off"
+              />
+              {isBoxNumberInvalid && (
+                <div className="flex items-center space-x-2 text-rose-400 bg-rose-950/40 border border-rose-800/80 px-3 py-1.5 rounded-xl text-xs font-bold animate-fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>
+                    {language === 'uz'
+                      ? '❌ Faqat 85 bilan boshlanadigan yoki «Без грузоместа» qabul qilinadi!'
+                      : '❌ Принимается только начинающийся с 85 или «Без грузоместа»!'}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* FIELD 2: PVZ INPUT WITH SMART AUTOCOMPLETE */}
@@ -907,9 +1012,9 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
           <button
             type="button"
             onClick={handleFinishBox}
-            disabled={isFinishing || items.length === 0 || !isTargetBoxValid}
+            disabled={isFinishing || items.length === 0 || !isTargetBoxValid || !isBoxNumberValid}
             className={`w-full py-4 px-6 text-white text-base sm:text-lg font-black rounded-xl shadow-lg flex items-center justify-center space-x-2 transition-all cursor-pointer border ${
-              items.length > 0 && isTargetBoxValid && !isFinishing
+              items.length > 0 && isTargetBoxValid && isBoxNumberValid && !isFinishing
                 ? 'bg-emerald-600 hover:bg-emerald-500 border-emerald-500 shadow-emerald-900/40 active:translate-y-0.5'
                 : 'bg-[#25283a] border-[#2e3347] text-slate-500 cursor-not-allowed opacity-60'
             }`}
@@ -918,6 +1023,18 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               <span className="flex items-center space-x-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 <span>{language === 'uz' ? 'Jadvalga yozilmoqda...' : 'Запись в Таблицу...'}</span>
+              </span>
+            ) : isBoxNumberInvalid ? (
+              <span className="text-rose-400">
+                {language === 'uz'
+                  ? '❌ Gruzamesta faqat 85 bilan boshlanishi shart!'
+                  : '❌ Грузоместо должно начинаться с 85!'}
+              </span>
+            ) : !boxNumber.trim() && items.length > 0 ? (
+              <span>
+                {language === 'uz'
+                  ? '«Gruzamesta» (85) maydonini to\'ldiring'
+                  : 'Укажите «Грузоместо» (85) для завершения'}
               </span>
             ) : isTargetBoxInvalid ? (
               <span className="text-rose-400">
