@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Возвратный поток — Фиксация проблемных товаров</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: 1920px 1080px;
+      margin: 0;
+    }
+
+    :root {
+      --bg-dark: #070a12;
+      --bg-card: rgba(15, 22, 36, 0.94);
+      --border-card: rgba(255, 255, 255, 0.1);
+      --primary: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .slide {
+      width: 1920px;
+      height: 1080px;
+      page-break-after: always;
+      break-after: page;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 46px 80px;
+      background: #070a12;
+      background-image: 
+        radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
+        radial-gradient(circle at 10% 90%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+    }
+
+    /* Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .brand-tag {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-card);
+      padding: 8px 18px;
+      border-radius: 9999px;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--accent-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-emerald);
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: #e2e8f0;
+      text-transform: uppercase;
+    }
+
+    .slide-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-card);
+      padding: 6px 16px;
+      border-radius: 9999px;
+    }
+
+    /* Content Area */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      width: fit-content;
+    }
+    .badge-blue { background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); }
+    .badge-emerald { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-purple { background: rgba(139, 92, 246, 0.18); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.35); }
+    .badge-amber { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-rose { background: rgba(244, 63, 94, 0.18); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+
+    .hero-title {
+      font-size: 62px;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 18px;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+    .hero-title .highlight {
+      color: #60a5fa;
+    }
+
+    .slide-title {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 10px;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+    }
+    .slide-title .highlight {
+      color: #60a5fa;
+    }
+
+    .slide-subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin-bottom: 24px;
+      max-width: 1400px;
+    }
+
+    /* Purpose Box on Title Slide */
+    .purpose-box {
+      background: rgba(30, 41, 59, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-left: 4px solid #3b82f6;
+      border-radius: 14px;
+      padding: 16px 22px;
+      margin-bottom: 18px;
+      max-width: 1250px;
+    }
+
+    .purpose-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #93c5fd;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+
+    .purpose-text {
+      font-size: 15px;
+      color: #e2e8f0;
+      line-height: 1.55;
+    }
+
+    /* Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    /* Showcase Layout with Screenshot */
+    .showcase-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .showcase-info {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .showcase-image-box {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      padding: 10px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 25px rgba(59, 130, 246, 0.15);
+    }
+
+    .showcase-image-box img {
+      width: 100%;
+      height: auto;
+      max-height: 560px;
+      object-fit: contain;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 24px;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), transparent);
+    }
+
+    .feature-card.card-emerald::before { background: linear-gradient(90deg, var(--accent-emerald), transparent); }
+    .feature-card.card-purple::before { background: linear-gradient(90deg, var(--accent-purple), transparent); }
+    .feature-card.card-amber::before { background: linear-gradient(90deg, var(--accent-amber), transparent); }
+    .feature-card.card-rose::before { background: linear-gradient(90deg, var(--accent-rose), transparent); }
+
+    .card-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .card-text {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .card-text code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #60a5fa;
+      font-family: monospace;
+    }
+
+    .stat-pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-card);
+      padding: 16px 20px;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-pill-num {
+      font-size: 34px;
+      font-weight: 800;
+      color: #60a5fa;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .stat-pill-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Architecture Flow Box */
+    .arch-flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1.2fr auto 1.2fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .flow-arrow {
+      font-size: 28px;
+      color: #60a5fa;
+      font-weight: 900;
+    }
+
+    .pricing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      padding: 26px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .pricing-card.featured {
+      border: 2px solid #3b82f6;
+      background: rgba(23, 37, 84, 0.55);
+      box-shadow: 0 0 35px rgba(59, 130, 246, 0.25);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      right: 20px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      padding: 3px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .price-value {
+      font-size: 40px;
+      font-weight: 900;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      margin: 10px 0 4px 0;
+    }
+
+    .price-period {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .price-features {
+      list-style: none;
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .price-features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-card);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SLIDE 1: MAIN TITLE & PURPOSE -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Фиксация проблемных товаров</div>
+      </div>
+      <div class="slide-num">01 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <span class="badge badge-blue">WMS Uzum Market • Складской учёт</span>
+      <h1 class="hero-title">Возвратный поток:<br><span class="highlight">Фиксация проблемных товаров</span></h1>
+      
+      <!-- Purpose Box -->
+      <div class="purpose-box">
+        <div class="purpose-title">🎯 Назначение и цель презентации:</div>
+        <div class="purpose-text">
+          Официальная презентация программно-аппаратного комплекса <strong>«Возвратный поток — Фиксация проблемных товаров» (ВП Пересчёт)</strong>. Программа автоматизирует станции сортировки и пересчета возвратов, устраняет ручной ввод и фиксирует излишки/расхождения с лазерным сканированием и прямой синхронизацией в <strong>Google Таблицы</strong> для <strong>50+ операторов</strong>.
+        </div>
+      </div>
+
+      <!-- Prominent Server Deployment Badges -->
+      <div style="display: flex; gap: 16px; margin-bottom: 14px;">
+        <div style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">☁️</span>
+          <span style="font-size: 14px; color: #fff;"><strong>Web-сервер приложения:</strong> Vercel Cloud Server (<code style="color: #60a5fa;">https://pereschot-vp-chi.vercel.app/</code>)</span>
+        </div>
+        <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">📊</span>
+          <span style="font-size: 14px; color: #fff;"><strong>Сервер базы данных:</strong> Google Cloud (Google Таблицы)</span>
+        </div>
+      </div>
+      
+      <div class="stat-pills">
+        <div class="stat-pill">
+          <div class="stat-pill-num">2 464</div>
+          <div class="stat-pill-label">Официальных ПВЗ Uzum в базе</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-num">50+</div>
+          <div class="stat-pill-label">Операторов одновременно</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-num">100%</div>
+          <div class="stat-pill-label">Google Sheets синхронизация</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-pill-num">0.1 сек</div>
+          <div class="stat-pill-label">Скорость лазерного сканера</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Комплексное решение • Web-сервер: Vercel Cloud</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: Problem & Solution -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Анализ и решение</div>
+      </div>
+      <div class="slide-num">02 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <span class="badge badge-amber">Анализ процессов</span>
+      <h2 class="slide-title">Вызовы возвратного потока и их решение</h2>
+      <p class="slide-subtitle">С какими трудностями сталкивался склад при ручной фиксации и как новая система автоматизирует каждый шаг?</p>
+
+      <div class="grid-2">
+        <div class="feature-card card-amber">
+          <div class="card-icon">⚠️</div>
+          <div class="card-title">Трудности ручного учёта</div>
+          <div class="card-text">
+            • Ошибки человеческого фактора при ручном вводе номеров и кодов.<br>
+            • Сложность идентификации исходного ПВЗ при расхождениях.<br>
+            • Задержки при сведении итоговых отчетов по сменам и столам.<br>
+            • Риск потери данных, появления дубликатов и неучтенных товаров.
+          </div>
+        </div>
+
+        <div class="feature-card card-emerald">
+          <div class="card-icon">🚀</div>
+          <div class="card-title">Решение системы ВП Фиксация</div>
+          <div class="card-text">
+            • Фиксация проблемных товаров аппаратным лазерным сканером за 1 сек.<br>
+            • Умная база из 2 464 ПВЗ с мгновенным автодополнением и поиском.<br>
+            • Персональная ответственность оператора и жесткая привязка к столу.<br>
+            • Прямая передача данных в реальном времени в облачную базу.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Повышение производительности и устранение ошибок ручного ввода</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: GOOGLE SHEETS & CLOUD SYNC ARCHITECTURE -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Google Таблицы</div>
+      </div>
+      <div class="slide-num">03 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <span class="badge badge-emerald">Архитектура передачи данных</span>
+      <h2 class="slide-title">Куда и как сохраняются зафиксированные данные?</h2>
+      <p class="slide-subtitle">Архитектура: Оператор сканирует ➔ Web-сервер Vercel Cloud ➔ Google Cloud Webhook ➔ Google Таблица:</p>
+
+      <div class="arch-flow">
+        <div class="feature-card card-blue" style="padding: 18px;">
+          <div style="font-size: 22px; margin-bottom: 4px;">📱 💻</div>
+          <div style="font-weight: 700; color: #fff; font-size: 15px;">Рабочие станции (50+)</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Лазерные сканеры + Web UI</div>
+        </div>
+
+        <div class="flow-arrow">➔</div>
+
+        <div class="feature-card card-purple" style="padding: 18px;">
+          <div style="font-size: 22px; margin-bottom: 4px;">☁️ ⚡</div>
+          <div style="font-weight: 700; color: #60a5fa; font-size: 15px;">Vercel Cloud Server</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Next.js Serverless Proxy + In-Memory кэш</div>
+        </div>
+
+        <div class="flow-arrow">➔</div>
+
+        <div class="feature-card card-emerald" style="padding: 18px;">
+          <div style="font-size: 22px; margin-bottom: 4px;">📊 ☁️</div>
+          <div style="font-weight: 700; color: #34d399; font-size: 15px;">Google Cloud & Sheets</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Apps Script Webhook + LockService</div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="feature-card card-emerald">
+          <div class="card-title">☁️ Сервер размещения БД: Google Cloud</div>
+          <div class="card-text">Данные хранятся в защищенном облаке Google. Таблица доступна руководству, аналитикам и WMS-команде.</div>
+        </div>
+
+        <div class="feature-card card-purple">
+          <div class="card-title">🔒 LockService (Без потерь строк)</div>
+          <div class="card-text">Специальный механизм блокировки строк гарантирует, что 50 операторов записывают одновременно без перезаписи.</div>
+        </div>
+
+        <div class="feature-card card-blue">
+          <div class="card-title">💰 $0 затрат на базу данных</div>
+          <div class="card-text">Google Sheets API и облачное хранилище полностью бесплатны и уже входят в инфраструктуру компании.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Мгновенная доставка каждой записи в централизованную Google Таблицу склада</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: SCREENSHOT 1 - AUTH -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Авторизация</div>
+      </div>
+      <div class="slide-num">04 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="showcase-layout">
+        <div class="showcase-info">
+          <span class="badge badge-purple">1. Вход в систему и смена</span>
+          <h2 class="slide-title">Авторизация по QR-бейджу и столу</h2>
+          <p class="slide-subtitle" style="margin-bottom: 0;">Каждая операция на складе строго привязана к конкретному сотруднику и рабочей станции:</p>
+
+          <div class="feature-card card-purple">
+            <div class="card-title">🪪 Сканирование QR-бейджа</div>
+            <div class="card-text">ФИО определяется исключительно по QR-коду сотрудника (ручной ввод с клавиатуры отключен во избежание фальсификаций).</div>
+          </div>
+
+          <div class="feature-card card-blue">
+            <div class="card-title">🪑 Штрих-код рабочего стола</div>
+            <div class="card-text">Сканируется код стола (<code>STOL-01</code>...<code>STOL-20</code>) и выбирается номер рабочей смены (1–4).</div>
+          </div>
+
+          <div class="feature-card card-emerald">
+            <div class="card-title">⏰ Авто-закрытие смен в 09:00 и 21:00</div>
+            <div class="card-text">Автоматический выход из системы по окончании смены для фиксации итоговых отчетов.</div>
+          </div>
+        </div>
+
+        <div class="showcase-image-box">
+          <img src="./screenshots/01_auth_modal.png" alt="Окно авторизации">
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Интерфейс авторизации оператора перед началом рабочей смены</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: SCREENSHOT 2 - SCANNER -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Рабочий стол</div>
+      </div>
+      <div class="slide-num">05 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="showcase-layout">
+        <div class="showcase-info">
+          <span class="badge badge-blue">2. Рабочее место оператора</span>
+          <h2 class="slide-title">Главный экран сканирования и учёта</h2>
+          <p class="slide-subtitle" style="margin-bottom: 0;">Эргономичный экран, оптимизированный под скоростную работу со сканером:</p>
+
+          <div class="feature-card">
+            <div class="card-title">📦 Входящее грузоместо и ПВЗ</div>
+            <div class="card-text">Сканируется штрих-код короба (<code>85-000...</code>) и выбирается пункт назначения.</div>
+          </div>
+
+          <div class="feature-card card-emerald">
+            <div class="card-title">⚡ Сканирование товаров</div>
+            <div class="card-text">Лазерный сканер считывает баркод товара, воспроизводится звуковой сигнал и открывается выбор причины.</div>
+          </div>
+
+          <div class="feature-card card-purple">
+            <div class="card-title">🔒 Защита короба перемещения (80 / 85)</div>
+            <div class="card-text">Система принимает только регламентные короба серий <code>80</code> или <code>85</code>, исключая ошибки складирования.</div>
+          </div>
+        </div>
+
+        <div class="showcase-image-box">
+          <img src="./screenshots/02_scanner_main.png" alt="Главный экран сканирования">
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Основной интерфейс фиксации (1 короб за 30 секунд)</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: SCREENSHOT 3 - PVZ SEARCH -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Поиск ПВЗ</div>
+      </div>
+      <div class="slide-num">06 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="showcase-layout">
+        <div class="showcase-info">
+          <span class="badge badge-emerald">3. Интеллектуальный поиск</span>
+          <h2 class="slide-title">База 2 464 официальных ПВЗ Uzum</h2>
+          <p class="slide-subtitle" style="margin-bottom: 0;">Умный поиск исключает ошибки оператора при вводе сложных и похожих названий:</p>
+
+          <div class="feature-card card-emerald">
+            <div class="card-title">🔤 Автоматическая транслитерация</div>
+            <div class="card-text">Ввод на латинице <code>tash 14</code> мгновенно находит официальный пункт <strong>ТАШ-14</strong>. <code>sam 05</code> ➔ <strong>СМК-05</strong>.</div>
+          </div>
+
+          <div class="feature-card card-purple">
+            <div class="card-title">🔢 Поиск по номеру</div>
+            <div class="card-text">Достаточно ввести номер <code>14</code>, чтобы увидеть все пункты №14 (ТАШ-14, СМК-14, ФЕР-14).</div>
+          </div>
+
+          <div class="feature-card card-blue">
+            <div class="card-title">🏪 Франшизы и новые форматы</div>
+            <div class="card-text">Полная интеграция региональных франшиз (<code>Fr...</code>) и новых открывающихся пунктов (<code>ipNEW-...</code>).</div>
+          </div>
+        </div>
+
+        <div class="showcase-image-box">
+          <img src="./screenshots/03_pvz_search.png" alt="Умный поиск ПВЗ">
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Поиск с клавиатуры стрелками (↓ / ↑) и выбор клавишей Enter</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: SCREENSHOT 4 - REASONS -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Регламент причин</div>
+      </div>
+      <div class="slide-num">07 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="showcase-layout">
+        <div class="showcase-info">
+          <span class="badge badge-rose">4. Классификация расхождений</span>
+          <h2 class="slide-title">9 стандартизированных причин</h2>
+          <p class="slide-subtitle" style="margin-bottom: 0;">Модальное окно выбора причины появляется автоматически при сканировании баркода:</p>
+
+          <div class="feature-card card-rose">
+            <div class="card-title">📋 Регламентные причины:</div>
+            <div class="card-text" style="font-size: 15px; line-height: 1.6;">
+              1. <strong>Лишний товар в коробе</strong> (излишек)<br>
+              2. <strong>QR / IMEI</strong> (не читается или поврежден)<br>
+              3. <strong>Товар без акта</strong> (нет документов)<br>
+              4. <strong>Ранее отменен</strong> (отмена до поступления)<br>
+              5. <strong>Неверный товар / Пустая упаковка</strong><br>
+              6. <strong>Недокомплект</strong> (неполный набор)
+            </div>
+          </div>
+
+          <div class="feature-card card-emerald">
+            <div class="card-title">🎯 Точная статистика</div>
+            <div class="card-text">Исключает субъективность операторов и дает руководству чистую аналитику для работы с поставщиками и ПВЗ.</div>
+          </div>
+        </div>
+
+        <div class="showcase-image-box">
+          <img src="./screenshots/04_reasons_modal.png" alt="Выбор причины расхождения">
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Окно фиксации расхождений по стандарту складских операций WMS</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: SCREENSHOT 5 - MONITORING -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Аналитика</div>
+      </div>
+      <div class="slide-num">08 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <div class="showcase-layout">
+        <div class="showcase-info">
+          <span class="badge badge-purple">5. Панель руководителя</span>
+          <h2 class="slide-title">Онлайн-мониторинг и KPI сотрудников</h2>
+          <p class="slide-subtitle" style="margin-bottom: 0;">Сводка данных за день в реальном времени с доступом по PIN-коду администратора:</p>
+
+          <div class="feature-card card-purple">
+            <div class="card-title">🏆 Рейтинг сотрудников (Пьедестал 🥇🥈🥉)</div>
+            <div class="card-text">Кто сколько зафиксировал товаров, закрыл коробов, процент от общего объема склада и время последней активности.</div>
+          </div>
+
+          <div class="feature-card card-amber">
+            <div class="card-title">📍 Рейтинг проблемных ПВЗ</div>
+            <div class="card-text">ТОП пунктов выдачи с наибольшим количеством расхождений для оперативного контроля логистики.</div>
+          </div>
+
+          <div class="feature-card card-blue">
+            <div class="card-title">📊 Аналитика по причинам</div>
+            <div class="card-text">Наглядная круговая диаграмма распределения проблемных позиций за смену.</div>
+          </div>
+        </div>
+
+        <div class="showcase-image-box">
+          <img src="./screenshots/05_monitoring_dashboard.png" alt="Панель мониторинга">
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Дашборд аналитики и контроля эффективности работы смен</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: SERVER & PRICING -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Сервер и бюджет</div>
+      </div>
+      <div class="slide-num">09 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <span class="badge badge-blue">Серверное размещение и бюджет</span>
+      <h2 class="slide-title">Web-сервер: Vercel Cloud Server ($20/мес)</h2>
+      <p class="slide-subtitle">Приложение размещено на глобальном облачном сервере <strong>Vercel (Serverless)</strong> в регионе Frankfurt (fra1):</p>
+
+      <div class="grid-3">
+        
+        <!-- Vercel Pro Card -->
+        <div class="pricing-card featured">
+          <div class="pricing-badge">Текущий Web-сервер</div>
+          <div>
+            <span class="badge badge-blue" style="margin-bottom: 6px;">Vercel Pro (Cloud)</span>
+            <div class="price-value">$20 <span class="price-period">/ месяц</span></div>
+            <div style="font-size: 13px; color: #93c5fd; font-weight: 600;">https://pereschot-vp-chi.vercel.app/</div>
+
+            <ul class="price-features">
+              <li>✅ <strong>Единая оплата:</strong> $20 за весь аккаунт со ВСЕМИ проектами</li>
+              <li>✅ <strong>99.99% Uptime:</strong> Отказоустойчивая Serverless-сеть</li>
+              <li>✅ <strong>1 TB трафика:</strong> Мгновенная загрузка сотен тысяч запросов</li>
+              <li>✅ <strong>0 минут администрирования:</strong> Авто-деплой с GitHub</li>
+            </ul>
+          </div>
+          <div style="margin-top: 14px; font-size: 12px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+            Регион: <strong>Frankfurt (fra1)</strong> • SSL / HTTPS включен
+          </div>
+        </div>
+
+        <!-- VPS Alternative Card -->
+        <div class="pricing-card">
+          <div>
+            <span class="badge badge-emerald" style="margin-bottom: 6px;">VPS Cloud (Hetzner / DO)</span>
+            <div class="price-value">$5 – $8 <span class="price-period">/ месяц</span></div>
+            <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Выделенный Linux сервер</div>
+
+            <ul class="price-features">
+              <li>✅ <strong>Экономия:</strong> В 3 раза дешевле Vercel</li>
+              <li>✅ <strong>Универсальность:</strong> Сайты + Боты + Базы данных</li>
+              <li>✅ <strong>Coolify:</strong> Собственный аналог Vercel на сервере</li>
+              <li>⚠️ <strong>Требуется настройка:</strong> Администрирование Linux</li>
+            </ul>
+          </div>
+          <div style="margin-top: 14px; font-size: 12px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+            2-4 CPU • 4-8 GB RAM • 80 GB SSD
+          </div>
+        </div>
+
+        <!-- Local Server Card -->
+        <div class="pricing-card">
+          <div>
+            <span class="badge badge-purple" style="margin-bottom: 6px;">Локальный сервер склада</span>
+            <div class="price-value">$0 <span class="price-period">/ месяц</span></div>
+            <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Внутренняя сеть Wi-Fi / LAN</div>
+
+            <ul class="price-features">
+              <li>✅ <strong>Бесплатно:</strong> Запуск на компьютере склада</li>
+              <li>✅ <strong>Автономность:</strong> Работает по локальному IP (10.123...)</li>
+              <li>✅ <strong>Прямой доступ:</strong> Со сканеров и станций</li>
+              <li>⚠️ <strong>Зависимость:</strong> Компьютер должен быть включен</li>
+            </ul>
+          </div>
+          <div style="margin-top: 14px; font-size: 12px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+            Порт 3001 • Next.js Standalone Production
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток: Размещение на Vercel Pro ($20/мес за весь аккаунт)</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Business Impact -->
+  <div class="slide">
+    <div class="slide-header">
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Итоги и Эффективность</div>
+      </div>
+      <div class="slide-num">10 / 10</div>
+    </div>
+
+    <div class="slide-body">
+      <span class="badge badge-emerald">Бизнес-результат</span>
+      <h2 class="slide-title">Ключевые результаты внедрения системы</h2>
+      <p class="slide-subtitle">Экономический и операционный эффект внедрения платформы на складе:</p>
+
+      <div class="grid-3">
+        <div class="feature-card card-emerald">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Ускорение в 3 раза</div>
+          <div class="card-text">Полный отказ от бумажных журналов и ручного ввода. Обработка одного грузоместа занимает считанные секунды.</div>
+        </div>
+
+        <div class="feature-card card-blue">
+          <div class="card-icon">🛡️</div>
+          <div class="card-title">0% потерь и путаницы</div>
+          <div class="card-text">Каждый товар привязан к оператору, рабочему столу, исходному ПВЗ и номеру короба перемещения (серии 80/85).</div>
+        </div>
+
+        <div class="feature-card card-purple">
+          <div class="card-icon">📈</div>
+          <div class="card-title">100% прозрачность</div>
+          <div class="card-text">Мгновенная синхронизация с облачной базой данных и сводными таблицами для руководства логистики.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <div>Возвратный поток — надежный инструмент оптимизации складских процессов</div>
+      <div>Uzum Market WMS 2026</div>
+    </div>
+  </div>
+
+</body>
+</html>

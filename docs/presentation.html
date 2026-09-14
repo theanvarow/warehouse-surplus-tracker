@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Возвратный поток — Фиксация проблемных товаров</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070a12;
+      --bg-card: rgba(15, 22, 36, 0.88);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.4);
+      --accent-emerald: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    h1, h2, h3, h4, .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      width: 650px;
+      height: 650px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--primary-glow) 0%, rgba(0,0,0,0) 70%);
+      top: -150px;
+      right: -150px;
+      z-index: 0;
+      pointer-events: none;
+      filter: blur(90px);
+    }
+    .ambient-glow-2 {
+      position: fixed;
+      width: 550px;
+      height: 550px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, rgba(0,0,0,0) 70%);
+      bottom: -100px;
+      left: -100px;
+      z-index: 0;
+      pointer-events: none;
+      filter: blur(90px);
+    }
+
+    .presentation-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 48px;
+    }
+
+    .brand-tag {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-card);
+      padding: 8px 18px;
+      border-radius: 9999px;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--accent-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent-emerald);
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #e2e8f0;
+      text-transform: uppercase;
+    }
+
+    .slide-counter {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-card);
+      padding: 8px 18px;
+      border-radius: 9999px;
+    }
+
+    .slide-stage {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 48px;
+    }
+
+    .slide {
+      position: absolute;
+      width: 100%;
+      max-width: 1300px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.98);
+      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-emerald { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-rose { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    .slide-title {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slide-subtitle {
+      font-size: 17px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 22px;
+      max-width: 900px;
+    }
+
+    /* Purpose Box */
+    .purpose-box {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-left: 4px solid #3b82f6;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 14px;
+    }
+
+    .purpose-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #93c5fd;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+    }
+
+    .purpose-text {
+      font-size: 14px;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    .showcase-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .showcase-info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .showcase-image-box {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 25px rgba(59, 130, 246, 0.15);
+    }
+
+    .showcase-image-box img {
+      width: 100%;
+      height: auto;
+      max-height: 460px;
+      object-fit: contain;
+      border-radius: 10px;
+      display: block;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), transparent);
+    }
+
+    .feature-card.card-emerald::before { background: linear-gradient(90deg, var(--accent-emerald), transparent); }
+    .feature-card.card-purple::before { background: linear-gradient(90deg, var(--accent-purple), transparent); }
+    .feature-card.card-amber::before { background: linear-gradient(90deg, var(--accent-amber), transparent); }
+    .feature-card.card-rose::before { background: linear-gradient(90deg, var(--accent-rose), transparent); }
+
+    .card-icon {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .card-text {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .card-text code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #60a5fa;
+      font-family: monospace;
+    }
+
+    .hero-title {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 20%, #60a5fa 60%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-card);
+      padding: 12px 18px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat-pill-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: #60a5fa;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .stat-pill-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .arch-flow {
+      display: grid;
+      grid-template-columns: 1fr auto 1.1fr auto 1.2fr;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .flow-arrow {
+      font-size: 24px;
+      color: #60a5fa;
+      font-weight: 900;
+    }
+
+    .pricing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 24px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .pricing-card.featured {
+      border: 2px solid #3b82f6;
+      background: rgba(23, 37, 84, 0.55);
+      box-shadow: 0 0 35px rgba(59, 130, 246, 0.25);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      right: 20px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      padding: 3px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .price-value {
+      font-size: 36px;
+      font-weight: 900;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      margin: 8px 0 4px 0;
+    }
+
+    .price-period {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .price-features {
+      list-style: none;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .price-features li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 48px;
+      background: rgba(7, 10, 18, 0.7);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border-card);
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      margin: 0 36px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 10%;
+      background: linear-gradient(90deg, var(--primary), var(--accent-purple));
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-nav {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-card);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: none;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    }
+
+    .keyboard-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .key {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--border-card);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="presentation-container">
+    
+    <header>
+      <div class="brand-tag">
+        <div class="brand-dot"></div>
+        <div class="brand-title">Возвратный поток • Фиксация проблемных товаров</div>
+      </div>
+      <div class="slide-counter" id="slideCounter">1 / 10</div>
+    </header>
+
+    <main class="slide-stage">
+      
+      <!-- Slide 1: Hero & Purpose -->
+      <section class="slide active" data-slide="1">
+        <span class="badge badge-blue">WMS Uzum Market • Складской учёт</span>
+        <h1 class="hero-title">Возвратный поток:<br>Фиксация проблемных товаров</h1>
+        
+        <div class="purpose-box">
+          <div class="purpose-title">🎯 Назначение и цель презентации:</div>
+          <div class="purpose-text">
+            Официальная презентация программно-аппаратного комплекса <strong>«Возвратный поток — Фиксация проблемных товаров» (ВП Пересчёт)</strong>. Программа автоматизирует станции сортировки и пересчета возвратов, устраняет ручной ввод и фиксирует излишки/расхождения с лазерным сканированием и прямой синхронизацией в <strong>Google Таблицы</strong> для <strong>50+ операторов</strong>.
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+          <div style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); padding: 8px 16px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">☁️</span>
+            <span style="font-size: 13px; color: #fff;"><strong>Web-сервер:</strong> Vercel Cloud Server (<code style="color: #60a5fa;">https://pereschot-vp-chi.vercel.app/</code>)</span>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 8px 16px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">📊</span>
+            <span style="font-size: 13px; color: #fff;"><strong>Сервер БД:</strong> Google Cloud (Google Таблицы)</span>
+          </div>
+        </div>
+        
+        <div class="stat-pills">
+          <div class="stat-pill">
+            <div class="stat-pill-num">2 464</div>
+            <div class="stat-pill-label">Официальных ПВЗ Uzum</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-num">50+</div>
+            <div class="stat-pill-label">Операторов одновременно</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-num">100%</div>
+            <div class="stat-pill-label">Google Sheets синхронизация</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-pill-num">0.1s</div>
+            <div class="stat-pill-label">Отклик лазерного сканера</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 2: Problem & Solution -->
+      <section class="slide" data-slide="2">
+        <span class="badge badge-amber">Анализ процессов</span>
+        <h2 class="slide-title">Вызовы возвратного потока и их решение</h2>
+        <p class="slide-subtitle">С какими трудностями сталкивался склад при ручной фиксации и как система автоматизирует каждый шаг:</p>
+
+        <div class="cards-grid">
+          <div class="feature-card card-amber">
+            <div class="card-icon">⚠️</div>
+            <div class="card-title">Трудности ручного учёта</div>
+            <div class="card-text">
+              • Ошибки человеческого фактора при ручном вводе номеров и кодов.<br>
+              • Сложность идентификации исходного ПВЗ при расхождениях.<br>
+              • Задержки при сведении итоговых отчетов по сменам и столам.<br>
+              • Риск потери данных, появления дубликатов и неучтенных товаров.
+            </div>
+          </div>
+
+          <div class="feature-card card-emerald">
+            <div class="card-icon">🚀</div>
+            <div class="card-title">Решение системы ВП Фиксация</div>
+            <div class="card-text">
+              • Фиксация проблемных товаров аппаратным лазерным сканером за 1 сек.<br>
+              • Умная база из 2 464 ПВЗ с мгновенным автодополнением и поиском.<br>
+              • Персональная ответственность оператора и жесткая привязка к столу.<br>
+              • Прямая передача данных в реальном времени в облачную базу.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3: Google Cloud Architecture -->
+      <section class="slide" data-slide="3">
+        <span class="badge badge-emerald">Архитектура передачи данных</span>
+        <h2 class="slide-title">Куда и как сохраняются зафиксированные данные?</h2>
+        <p class="slide-subtitle">Архитектура: Оператор сканирует ➔ Web-сервер Vercel Cloud ➔ Google Cloud Webhook ➔ Google Таблица:</p>
+
+        <div class="arch-flow">
+          <div class="feature-card card-blue" style="padding: 16px;">
+            <div style="font-size: 20px; margin-bottom: 4px;">📱 💻</div>
+            <div style="font-weight: 700; color: #fff; font-size: 15px;">Рабочие станции (50+)</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Лазерные сканеры + Web UI</div>
+          </div>
+
+          <div class="flow-arrow">➔</div>
+
+          <div class="feature-card card-purple" style="padding: 16px;">
+            <div style="font-size: 20px; margin-bottom: 4px;">☁️ ⚡</div>
+            <div style="font-weight: 700; color: #60a5fa; font-size: 15px;">Vercel Cloud Server</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Next.js Serverless Proxy + In-Memory кэш</div>
+          </div>
+
+          <div class="flow-arrow">➔</div>
+
+          <div class="feature-card card-emerald" style="padding: 16px;">
+            <div style="font-size: 20px; margin-bottom: 4px;">📊 ☁️</div>
+            <div style="font-weight: 700; color: #34d399; font-size: 15px;">Google Cloud & Sheets</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Apps Script Webhook + LockService</div>
+          </div>
+        </div>
+
+        <div class="cards-grid">
+          <div class="feature-card card-emerald">
+            <div class="card-title">☁️ Сервер размещения: Google Cloud</div>
+            <div class="card-text">Данные хранятся в защищенном облаке Google. Таблица доступна руководству, аналитикам и WMS-команде.</div>
+          </div>
+
+          <div class="feature-card card-purple">
+            <div class="card-title">🔒 LockService (Без потерь строк)</div>
+            <div class="card-text">Блокировка строк гарантирует, что 50 операторов могут записывать одновременно без перезаписи.</div>
+          </div>
+
+          <div class="feature-card card-blue">
+            <div class="card-title">💰 $0 затрат на базу данных</div>
+            <div class="card-text">Google Sheets API и облачное хранилище полностью бесплатны и уже входят в инфраструктуру компании.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 4: SCREENSHOT 1 - AUTH -->
+      <section class="slide" data-slide="4">
+        <div class="showcase-layout">
+          <div class="showcase-info">
+            <span class="badge badge-purple">1. Вход в систему и смена</span>
+            <h2 class="slide-title">Авторизация по QR-бейджу и столу</h2>
+            <p class="slide-subtitle">Каждая операция на складе строго привязана к конкретному сотруднику и рабочей станции:</p>
+
+            <div class="feature-card card-purple">
+              <div class="card-title">🪪 Сканирование QR-бейджа</div>
+              <div class="card-text">ФИО определяется исключительно по QR-коду сотрудника (ручной ввод отключен во избежание ошибок).</div>
+            </div>
+
+            <div class="feature-card card-blue">
+              <div class="card-title">🪑 Штрих-код стола</div>
+              <div class="card-text">Сканируется код стола (<code>STOL-01</code>...<code>STOL-20</code>) и выбирается номер смены (1–4).</div>
+            </div>
+
+            <div class="feature-card card-emerald">
+              <div class="card-title">⏰ Авто-закрытие смен в 09:00 и 21:00</div>
+              <div class="card-text">Автоматический выход из системы по окончании смены для фиксации отчетов.</div>
+            </div>
+          </div>
+
+          <div class="showcase-image-box">
+            <img src="./screenshots/01_auth_modal.png" alt="Окно авторизации">
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 5: SCREENSHOT 2 - SCANNER -->
+      <section class="slide" data-slide="5">
+        <div class="showcase-layout">
+          <div class="showcase-info">
+            <span class="badge badge-blue">2. Рабочее место оператора</span>
+            <h2 class="slide-title">Главный экран сканирования и учёта</h2>
+            <p class="slide-subtitle">Эргономичный экран, оптимизированный под скоростную работу со сканером:</p>
+
+            <div class="feature-card">
+              <div class="card-title">📦 Входящее грузоместо и ПВЗ</div>
+              <div class="card-text">Сканируется штрих-код короба (<code>85-000...</code>) и выбирается пункт назначения.</div>
+            </div>
+
+            <div class="feature-card card-emerald">
+              <div class="card-title">⚡ Сканирование товаров</div>
+              <div class="card-text">Лазерный сканер считывает баркод товара, воспроизводится звуковой сигнал и открывается выбор причины.</div>
+            </div>
+
+            <div class="feature-card card-purple">
+              <div class="card-title">🔒 Защита короба перемещения (80 / 85)</div>
+              <div class="card-text">Система принимает только регламентные короба серий <code>80</code> или <code>85</code>.</div>
+            </div>
+          </div>
+
+          <div class="showcase-image-box">
+            <img src="./screenshots/02_scanner_main.png" alt="Главный экран сканирования">
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 6: SCREENSHOT 3 - PVZ SEARCH -->
+      <section class="slide" data-slide="6">
+        <div class="showcase-layout">
+          <div class="showcase-info">
+            <span class="badge badge-emerald">3. Интеллектуальный поиск</span>
+            <h2 class="slide-title">База 2 464 официальных ПВЗ Uzum</h2>
+            <p class="slide-subtitle">Умный поиск исключает ошибки оператора при вводе сложных названий:</p>
+
+            <div class="feature-card card-emerald">
+              <div class="card-title">🔤 Автоматическая транслитерация</div>
+              <div class="card-text">Ввод на латинице <code>tash 14</code> мгновенно находит официальный пункт <strong>ТАШ-14</strong>. <code>sam 05</code> ➔ <strong>СМК-05</strong>.</div>
+            </div>
+
+            <div class="feature-card card-purple">
+              <div class="card-title">🔢 Поиск по номеру</div>
+              <div class="card-text">Достаточно ввести номер <code>14</code>, чтобы увидеть все пункты №14 (ТАШ-14, СМК-14, ФЕР-14).</div>
+            </div>
+
+            <div class="feature-card card-blue">
+              <div class="card-title">🏪 Франшизы и новые форматы</div>
+              <div class="card-text">Интеграция региональных франшиз (<code>Fr...</code>) и новых открывающихся пунктов (<code>ipNEW-...</code>).</div>
+            </div>
+          </div>
+
+          <div class="showcase-image-box">
+            <img src="./screenshots/03_pvz_search.png" alt="Умный поиск ПВЗ">
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 7: SCREENSHOT 4 - REASONS -->
+      <section class="slide" data-slide="7">
+        <div class="showcase-layout">
+          <div class="showcase-info">
+            <span class="badge badge-rose">4. Классификация расхождений</span>
+            <h2 class="slide-title">9 стандартизированных причин</h2>
+            <p class="slide-subtitle">Окно выбора причины появляется автоматически при сканировании баркода:</p>
+
+            <div class="feature-card card-rose">
+              <div class="card-title">📋 Регламентные причины:</div>
+              <div class="card-text" style="font-size: 14px; line-height: 1.6;">
+                1. <strong>Лишний товар в коробе</strong> (излишек)<br>
+                2. <strong>QR / IMEI</strong> (не читается или поврежден)<br>
+                3. <strong>Товар без акта</strong> (нет документов)<br>
+                4. <strong>Ранее отменен</strong> (отмена до поступления)<br>
+                5. <strong>Неверный товар / Пустая упаковка</strong><br>
+                6. <strong>Недокомплект</strong> (неполный набор)
+              </div>
+            </div>
+
+            <div class="feature-card card-emerald">
+              <div class="card-title">🎯 Точная статистика</div>
+              <div class="card-text">Исключает субъективность операторов и дает руководству чистую аналитику.</div>
+            </div>
+          </div>
+
+          <div class="showcase-image-box">
+            <img src="./screenshots/04_reasons_modal.png" alt="Выбор причины расхождения">
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 8: SCREENSHOT 5 - MONITORING -->
+      <section class="slide" data-slide="8">
+        <div class="showcase-layout">
+          <div class="showcase-info">
+            <span class="badge badge-purple">5. Панель руководителя</span>
+            <h2 class="slide-title">Онлайн-мониторинг и KPI сотрудников</h2>
+            <p class="slide-subtitle">Сводка данных за день в реальном времени с доступом по PIN-коду администратора:</p>
+
+            <div class="feature-card card-purple">
+              <div class="card-title">🏆 Рейтинг сотрудников (Пьедестал 🥇🥈🥉)</div>
+              <div class="card-text">Количество зафиксированных товаров, закрытых коробов, доля от общего объема склада и время последней активности.</div>
+            </div>
+
+            <div class="feature-card card-amber">
+              <div class="card-title">📍 Рейтинг проблемных ПВЗ</div>
+              <div class="card-text">ТОП пунктов выдачи с наибольшим количеством расхождений для оперативного контроля логистики.</div>
+            </div>
+
+            <div class="feature-card card-blue">
+              <div class="card-title">📊 Аналитика по причинам</div>
+              <div class="card-text">Наглядная круговая диаграмма распределения проблемных позиций за смену.</div>
+            </div>
+          </div>
+
+          <div class="showcase-image-box">
+            <img src="./screenshots/05_monitoring_dashboard.png" alt="Панель мониторинга">
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 9: SERVER & PRICING -->
+      <section class="slide" data-slide="9">
+        <span class="badge badge-blue">Серверное размещение и бюджет</span>
+        <h2 class="slide-title">Web-сервер: Vercel Cloud Server ($20/мес)</h2>
+        <p class="slide-subtitle">Приложение размещено на глобальном облачном сервере <strong>Vercel (Serverless)</strong> в регионе Frankfurt (fra1):</p>
+
+        <div class="cards-grid">
+          <div class="pricing-card featured">
+            <div class="pricing-badge">Текущий Web-сервер</div>
+            <div>
+              <span class="badge badge-blue" style="margin-bottom: 6px;">Vercel Pro (Cloud)</span>
+              <div class="price-value">$20 <span class="price-period">/ месяц</span></div>
+              <div style="font-size: 13px; color: #93c5fd; font-weight: 600;">https://pereschot-vp-chi.vercel.app/</div>
+
+              <ul class="price-features">
+                <li>✅ <strong>Единая оплата:</strong> $20 за весь аккаунт со ВСЕМИ проектами</li>
+                <li>✅ <strong>99.99% Uptime:</strong> Отказоустойчивая Serverless-сеть</li>
+                <li>✅ <strong>1 TB трафика:</strong> Мгновенная загрузка сотен тысяч запросов</li>
+                <li>✅ <strong>0 минут администрирования:</strong> Авто-деплой с GitHub</li>
+              </ul>
+            </div>
+            <div style="margin-top: 14px; font-size: 12px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+              Регион: <strong>Frankfurt (fra1)</strong> • SSL / HTTPS включен
+            </div>
+          </div>
+
+          <div class="pricing-card">
+            <div>
+              <span class="badge badge-emerald" style="margin-bottom: 6px;">VPS Cloud (Hetzner / DO)</span>
+              <div class="price-value">$5 – $8 <span class="price-period">/ месяц</span></div>
+              <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Выделенный Linux сервер</div>
+
+              <ul class="price-features">
+                <li>✅ <strong>Экономия:</strong> В 3 раза дешевле Vercel</li>
+                <li>✅ <strong>Универсальность:</strong> Сайты + Боты + Базы данных</li>
+                <li>✅ <strong>Coolify:</strong> Собственный аналог Vercel на сервере</li>
+                <li>⚠️ <strong>Требуется настройка:</strong> Администрирование Linux</li>
+              </ul>
+            </div>
+            <div style="margin-top: 14px; font-size: 12px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+              2-4 CPU • 4-8 GB RAM • 80 GB SSD
+            </div>
+          </div>
+
+          <div class="pricing-card">
+            <div>
+              <span class="badge badge-purple" style="margin-bottom: 6px;">Локальный сервер склада</span>
+              <div class="price-value">$0 <span class="price-period">/ месяц</span></div>
+              <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Внутренняя сеть Wi-Fi / LAN</div>
+
+              <ul class="price-features">
+                <li>✅ <strong>Бесплатно:</strong> Запуск на компьютере склада</li>
+                <li>✅ <strong>Автономность:</strong> Работает по локальному IP (10.123...)</li>
+                <li>✅ <strong>Прямой доступ:</strong> Со сканеров и станций</li>
+                <li>⚠️ <strong>Зависимость:</strong> Компьютер должен быть включен</li>
+              </ul>
+            </div>
+            <div style="margin-top: 14px; font-size: 12px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+              Порт 3001 • Next.js Standalone Production
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 10: Business Impact -->
+      <section class="slide" data-slide="10">
+        <span class="badge badge-emerald">Бизнес-результат</span>
+        <h2 class="slide-title">Ключевые результаты внедрения системы</h2>
+        <p class="slide-subtitle">Экономический и операционный эффект внедрения платформы на складе:</p>
+
+        <div class="cards-grid">
+          <div class="feature-card card-emerald">
+            <div class="card-icon">⚡</div>
+            <div class="card-title">Ускорение в 3 раза</div>
+            <div class="card-text">Полный отказ от бумажных журналов и ручного ввода. Обработка одного грузоместа занимает считанные секунды.</div>
+          </div>
+
+          <div class="feature-card card-blue">
+            <div class="card-icon">🛡️</div>
+            <div class="card-title">0% потерь и путаницы</div>
+            <div class="card-text">Каждый товар привязан к оператору, рабочему столу, исходному ПВЗ и номеру короба перемещения (серии 80/85).</div>
+          </div>
+
+          <div class="feature-card card-purple">
+            <div class="card-title">📈 100% прозрачность</div>
+            <div class="card-text">Мгновенная синхронизация с облачной базой данных и сводными таблицами для руководства логистики.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      <div class="keyboard-hint">
+        Клавиши: <span class="key">←</span> <span class="key">→</span> или <span class="key">Space</span>
+      </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-nav" id="btnPrev">← Назад</button>
+        <button class="btn-nav btn-primary" id="btnNext">Далее →</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = document.querySelectorAll('.slide').length;
+
+    const slides = document.querySelectorAll('.slide');
+    const slideCounter = document.getElementById('slideCounter');
+    const progressBar = document.getElementById('progressBar');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+
+    function updateSlide(newSlide) {
+      if (newSlide < 1) newSlide = 1;
+      if (newSlide > totalSlides) newSlide = totalSlides;
+
+      currentSlide = newSlide;
+
+      slides.forEach((slide, index) => {
+        if (index + 1 === currentSlide) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      slideCounter.textContent = `${currentSlide} / ${totalSlides}`;
+      progressBar.style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+      btnPrev.disabled = currentSlide === 1;
+      btnNext.textContent = currentSlide === totalSlides ? 'Завершено ✔' : 'Далее →';
+    }
+
+    btnPrev.addEventListener('click', () => updateSlide(currentSlide - 1));
+    btnNext.addEventListener('click', () => updateSlide(currentSlide + 1));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') {
+        updateSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft') {
+        updateSlide(currentSlide - 1);
+      }
+    });
+
+    updateSlide(1);
+  </script>
+</body>
+</html>
