@@ -410,18 +410,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         return;
       }
 
-      // Check if user accidentally scanned employee badge again into the table field
-      if (clean.includes(' ') && !clean.startsWith('ST') && !clean.startsWith('TABLE') && !clean.startsWith('СТОЛ')) {
+      // Ruscha klaviatura terilishini ham inobatga olamiz:
+      // T-FF -> Т-АА yoki Е-АА yoki T-FF
+      let normalized = clean;
+      if (normalized.startsWith('Е-АА') || normalized.startsWith('Т-АА') || normalized.startsWith('Е-FF') || normalized.startsWith('Т-FF')) {
+        normalized = convertRuLayoutToEn(normalized).toUpperCase();
+      }
+
+      // Faqat T-FF bilan boshlanadigan stol raqamlarini qabul qilish
+      if (!normalized.startsWith('T-FF')) {
         setError(
           language === 'uz'
-            ? 'Bu xodim beydjigi! Iltimos, stoldagi shtrix-kodni skanerlang.'
-            : 'Это бейдж сотрудника! Пожалуйста, отсканируйте штрих-код стола.'
+            ? '❌ Xato stol kodi! Stol raqami faqat «T-FF» bilan boshlanishi shart (masalan: T-FF01, T-FF-12).'
+            : '❌ Неверный номер стола! Номер стола должен начинаться строго с «T-FF» (например: T-FF01, T-FF-12).'
         );
         soundManager.playErrorSound();
         return;
       }
 
-      setTableNumber(clean);
+      setTableNumber(normalized);
       setIsTableScanned(true);
       isTableScannedRef.current = true;
       setError('');
