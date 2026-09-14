@@ -476,25 +476,18 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
         setRecentPvzList(getRecentPvzList());
       }
 
-      const syncResult = await onFinishSession(boxNumber.trim().toUpperCase(), finalTargetBox, finalPvz, updatedItems);
-
+      // ⚡ INSTANT OPTIMISTIC RESET: Darhol ekranni tozalaymiz va xabarni chiqaramiz (0.01 soniya!)
+      const currentBoxDisplay = boxNumber.trim().toUpperCase();
       const totalCount = items.reduce((s, i) => s + (i.count || 1), 0);
-      if (syncResult && syncResult.offline) {
-        setSuccessToast(
-          language === 'uz'
-            ? `⚠️ ${boxNumber} (${totalCount} dona) saqlandi, lekin Google Jadvalga ulanmadi (Offline). Sozlamalarni tekshiring!`
-            : `⚠️ Короб ${boxNumber} (${totalCount} шт.) сохранен локально, но не отправлен в Google Таблицу! Проверьте настройки URL.`
-        );
-      } else {
-        setSuccessToast(
-          language === 'uz'
-            ? `✅ ${boxNumber} ➔ ${finalTargetBox} (${totalCount} dona) yozildi!`
-            : `✅ Короб ${boxNumber} ➔ ${finalTargetBox} (${totalCount} шт.) записан!`
-        );
-      }
-      setTimeout(() => setSuccessToast(null), 5000);
 
-      // Reset form for next box
+      setSuccessToast(
+        language === 'uz'
+          ? `✅ ${currentBoxDisplay} ➔ ${finalTargetBox} (${totalCount} dona) yozildi!`
+          : `✅ Короб ${currentBoxDisplay} ➔ ${finalTargetBox} (${totalCount} шт.) записан!`
+      );
+      setTimeout(() => setSuccessToast(null), 4000);
+
+      // Reset form instantly for next box
       setBoxNumber('');
       setTargetBox('');
       setPvz('');
@@ -502,6 +495,20 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       setItems([]);
       setLastScannedBarcode(null);
       boxRef.current?.focus();
+
+      // Orqa fonda (background) Google Sheets ga yuborish: operator kutib qolmaydi!
+      onFinishSession(currentBoxDisplay, finalTargetBox, finalPvz, updatedItems).then((syncResult) => {
+        if (syncResult && syncResult.offline) {
+          setSuccessToast(
+            language === 'uz'
+              ? `⚠️ ${currentBoxDisplay} saqlandi, lekin offline navbatga qo'yildi.`
+              : `⚠️ Короб ${currentBoxDisplay} сохранен в очередь офлайн.`
+          );
+          setTimeout(() => setSuccessToast(null), 4000);
+        }
+      }).catch((err) => {
+        console.warn('Background sync error:', err);
+      });
     } catch (err) {
       console.error('Error finishing box:', err);
     } finally {
