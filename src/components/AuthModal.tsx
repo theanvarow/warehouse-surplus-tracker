@@ -353,7 +353,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         return;
       }
 
-      // Check if user accidentally scanned a table code into the name field
+      // 1. Agar foydalanuvchi adashib stol kodini skanerlagan bo'lsa
       const upper = clean.toUpperCase();
       const isTableCode =
         upper.startsWith('STOL-') ||
@@ -366,13 +366,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         upper.startsWith('СТОЛ ') ||
         upper.startsWith('ЫЕ-') ||
         upper.startsWith('ЫЕЩД-') ||
-        /^(STOL|СТОЛ|TABLE|ЫЕ|ЫЕЩД)\d+$/i.test(upper);
+        /^(STOL|СТОЛ|TABLE|ЫЕ|ЫЕЩД)\d+$/i.test(upper) ||
+        upper.startsWith('T-FF');
 
       if (isTableCode) {
         setError(
           language === 'uz'
-            ? 'Bu stol kodi! Iltimos, avval xodim beydjidagi QR kodni skanerlang.'
-            : 'Это код стола! Пожалуйста, сначала отсканируйте бейдж сотрудника.'
+            ? '❌ Bu stol kodi! Iltimos, avval xodim beydjidagi QR kodni skanerlang.'
+            : '❌ Это код стола! Пожалуйста, сначала отсканируйте бейдж сотрудника.'
+        );
+        soundManager.playErrorSound();
+        return;
+      }
+
+      // 2. Faqat harflar (ism, familiya, sharif) qabul qilinadi:
+      // Agar tarkibida raqamlar bo'lsa (masalan: tovar shtrix kodi 200..., 478..., yoki aralash raqamlar)
+      if (/\d/.test(clean)) {
+        setError(
+          language === 'uz'
+            ? '❌ Noto\'g\'ri QR kod! Xodim maydoniga raqamlar (tovar shtrix-kodi) kiritish mumkin emas. Faqat xodim beydjidagi F.I.O (harflar) qabul qilinadi.'
+            : '❌ Неверный QR-код! Нельзя сканировать цифры (штрих-код товара). Принимаются только буквы (Ф.И.О сотрудника).'
+        );
+        soundManager.playErrorSound();
+        return;
+      }
+
+      // 3. Matnda lotin yoki kirill harflari borligini tekshirish
+      // Ruxsat etilgan belgilar: Lotin va Kirill harflari, probel, tutuq belgilari (' ` ’), defis (-)
+      const isOnlyValidNameChars = /^[a-zA-Zа-яА-ЯёЁўЎқҚғҒҳҲ\s'`’\-\.]+$/i.test(clean);
+      const hasLetters = /[a-zA-Zа-яА-ЯёЁўЎқҚғҒҳҲ]/i.test(clean);
+
+      if (!isOnlyValidNameChars || !hasLetters) {
+        setError(
+          language === 'uz'
+            ? '❌ Noto\'g\'ri format! Faqat xodimning ism-familiyasi (harflar) qabul qilinadi.'
+            : '❌ Неверный формат! Принимаются только имя и фамилия сотрудника (буквы).'
         );
         soundManager.playErrorSound();
         return;
