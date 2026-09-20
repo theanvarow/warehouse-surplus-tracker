@@ -206,11 +206,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
           // If source box is empty, fill box first
           if (!boxNumber.trim()) {
             const cleanScanned = scanned.toUpperCase().trim();
-            const isValid =
-              cleanScanned.startsWith('85') ||
+            const isBez =
               cleanScanned.includes('ГРУЗОМЕСТ') ||
               cleanScanned.includes('ГРУЗАМЕСТ') ||
-              cleanScanned.includes('GRUZ');
+              cleanScanned.includes('GRUZ') ||
+              cleanScanned.includes('БЕЗ') ||
+              cleanScanned.includes('BEZ');
+            const isValid = cleanScanned.startsWith('85') || isBez;
 
             if (!isValid) {
               soundManager.playErrorSound();
@@ -224,7 +226,8 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               buffer = '';
               return;
             }
-            setBoxNumber(cleanScanned);
+            const normalizedScanned = isBez ? 'БЕЗ ГРУЗОМЕСТА' : cleanScanned;
+            setBoxNumber(normalizedScanned);
             soundManager.playBoxScanSound();
             pvzRef.current?.focus();
           } else {
@@ -289,11 +292,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     }
 
     const cleanBox = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
-    const isValidBox =
-      cleanBox.startsWith('85') ||
+    const isBez =
       cleanBox.includes('ГРУЗОМЕСТ') ||
       cleanBox.includes('ГРУЗАМЕСТ') ||
-      cleanBox.includes('GRUZ');
+      cleanBox.includes('GRUZ') ||
+      cleanBox.includes('БЕЗ') ||
+      cleanBox.includes('BEZ');
+    const isValidBox = cleanBox.startsWith('85') || isBez;
     if (!isValidBox) {
       soundManager.playErrorSound();
       alert(
@@ -337,12 +342,20 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       const shiftDigit = String(userSession.shift || '').replace(/[^0-9]/g, '') || '1';
       const periodStatus = userSession.shiftPeriod === 'night' ? 'Ночная' : 'Дневная';
 
+      const rawBox = boxNumber.trim().toUpperCase();
+      const isBezBox =
+        rawBox.includes('GRUZ') ||
+        rawBox.includes('ГРУЗ') ||
+        rawBox.includes('BEZ') ||
+        rawBox.includes('БЕЗ');
+      const finalBoxNumber = isBezBox ? 'БЕЗ ГРУЗОМЕСТА' : rawBox;
+
       const newItem: ScannedItem = {
         id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         barcode: code,
         timestamp,
         count: 1,
-        boxNumber: boxNumber.trim().toUpperCase(),
+        boxNumber: finalBoxNumber,
         targetBox: targetBox.trim().toUpperCase() || '—',
         pvz: pvz.trim() || '—',
         operator: userSession.employeeName,
@@ -416,12 +429,15 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
 
   // Finish Box and send to Google Sheets
   const handleFinishBox = async () => {
-    const cleanBox = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
-    const isValidBoxNumber =
-      cleanBox.startsWith('85') ||
-      cleanBox.includes('ГРУЗОМЕСТ') ||
-      cleanBox.includes('ГРУЗАМЕСТ') ||
-      cleanBox.includes('GRUZ');
+    const rawCleanBox = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
+    const isBez =
+      rawCleanBox.includes('ГРУЗОМЕСТ') ||
+      rawCleanBox.includes('ГРУЗАМЕСТ') ||
+      rawCleanBox.includes('GRUZ') ||
+      rawCleanBox.includes('БЕЗ') ||
+      rawCleanBox.includes('BEZ');
+    const cleanBox = isBez ? 'БЕЗ ГРУЗОМЕСТА' : rawCleanBox;
+    const isValidBoxNumber = cleanBox.startsWith('85') || isBez;
 
     if (!cleanBox || !isValidBoxNumber) {
       soundManager.playErrorSound();
@@ -519,11 +535,13 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
   const totalQuantity = items.reduce((sum, i) => sum + (i.count || 1), 0);
 
   const cleanBoxNumber = boxNumber.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
-  const isBoxNumberValid =
-    cleanBoxNumber.startsWith('85') ||
+  const isBezGruzomesta =
     cleanBoxNumber.includes('ГРУЗОМЕСТ') ||
     cleanBoxNumber.includes('ГРУЗАМЕСТ') ||
-    cleanBoxNumber.includes('GRUZ');
+    cleanBoxNumber.includes('GRUZ') ||
+    cleanBoxNumber.includes('БЕЗ') ||
+    cleanBoxNumber.includes('BEZ');
+  const isBoxNumberValid = cleanBoxNumber.startsWith('85') || isBezGruzomesta;
   const isBoxNumberInvalid = cleanBoxNumber.length >= 2 && !isBoxNumberValid;
 
   const cleanTargetBox = targetBox.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim().toUpperCase();
@@ -641,11 +659,16 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                       boxRef.current?.focus();
                       return;
                     }
+                    if (isBezGruzomesta) {
+                      setBoxNumber('БЕЗ ГРУЗОМЕСТА');
+                    }
                     pvzRef.current?.focus();
                   }
                 }}
                 onBlur={() => {
-                  if (cleanBoxNumber.length > 0 && !isBoxNumberValid) {
+                  if (isBezGruzomesta) {
+                    setBoxNumber('БЕЗ ГРУЗОМЕСТА');
+                  } else if (cleanBoxNumber.length > 0 && !isBoxNumberValid) {
                     soundManager.playErrorSound();
                     alert(
                       language === 'uz'

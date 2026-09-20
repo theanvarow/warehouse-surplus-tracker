@@ -162,9 +162,20 @@ export default function Home() {
   ) => {
     if (!userSession || scannedItems.length === 0) return;
 
+    let normalizedBox = (boxNumber || '').trim();
+    const upperBox = normalizedBox.toUpperCase();
+    if (
+      upperBox.includes('GRUZ') ||
+      upperBox.includes('ГРУЗ') ||
+      upperBox.includes('BEZ') ||
+      upperBox.includes('БЕЗ')
+    ) {
+      normalizedBox = 'БЕЗ ГРУЗОМЕСТА';
+    }
+
     const normalizedItems = scannedItems.map(item => ({
       ...item,
-      boxNumber: boxNumber || item.boxNumber,
+      boxNumber: normalizedBox || item.boxNumber,
       targetBox: targetBox || item.targetBox || '—',
       pvz: pvz || item.pvz || '—',
       operator: userSession.employeeName,
@@ -172,7 +183,7 @@ export default function Home() {
     }));
 
     const completedBox: BoxSession = {
-      boxNumber,
+      boxNumber: normalizedBox,
       targetBox,
       pvz,
       operator: userSession.employeeName,

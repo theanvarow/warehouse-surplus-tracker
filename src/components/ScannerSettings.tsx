@@ -121,6 +121,13 @@ function doPost(e) {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const rowNum = startRow + i;
+
+        let boxNumberValue = item.boxNumber ? String(item.boxNumber).trim() : '';
+        const upperBox = boxNumberValue.toUpperCase();
+        if (upperBox.indexOf('GRUZ') !== -1 || upperBox.indexOf('ГРУЗ') !== -1 || upperBox.indexOf('BEZ') !== -1 || upperBox.indexOf('БЕЗ') !== -1) {
+          boxNumberValue = 'БЕЗ ГРУЗОМЕСТА';
+        }
+
         const targetBoxValue = item.targetBox && item.targetBox !== '—' ? item.targetBox : (item.status || '—');
         const reasonValue = item.reason || item.note || 'Лишний товар в коробе';
         const pvzValue = item.pvz && item.pvz !== '—' ? item.pvz : '—';
@@ -132,7 +139,7 @@ function doPost(e) {
           shiftText,                                  // 3. Смена
           item.operator || 'Неизвестно',              // 4. Сотрудник
           item.tableNumber || '—',                    // 5. Номер Стола
-          item.boxNumber || '',                       // 6. Номер коруба
+          boxNumberValue,                             // 6. Номер коруба
           "'" + (item.barcode || ''),                 // 7. Шк товар
           item.count || 1,                            // 8. Кол
           targetBoxValue,                             // 9. новый коруба

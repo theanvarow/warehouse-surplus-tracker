@@ -24,10 +24,22 @@ export async function syncItemsToGoogleSheets(items: ScannedItem[]): Promise<Syn
         const shiftDigit = String(item.shift || '').replace(/[^0-9]/g, '') || '1';
         const shiftValue = `Смена ${shiftDigit}`;
 
+        // Gruzamesta raqamini tozalash va normallashtirish (har doim yagona 'БЕЗ ГРУЗОМЕСТА')
+        let boxNumberValue = (item.boxNumber || '').replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim();
+        const upperBox = boxNumberValue.toUpperCase();
+        if (
+          upperBox.includes('GRUZ') ||
+          upperBox.includes('ГРУЗ') ||
+          upperBox.includes('BEZ') ||
+          upperBox.includes('БЕЗ')
+        ) {
+          boxNumberValue = 'БЕЗ ГРУЗОМЕСТА';
+        }
+
         // Yangi korup (Куда переложен) tozalash: qavslar va noto'g'ri belgilarni bartaraf etish
         let targetBoxValue = (item.targetBox || '').replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim();
         if (!targetBoxValue || targetBoxValue.length < 2 || targetBoxValue === '—') {
-          targetBoxValue = (item.boxNumber || '—').replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim() || '—';
+          targetBoxValue = (boxNumberValue || '—').replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').trim() || '—';
         }
 
         // Koment/Izoh ustuniga Tanlangan Prichina yoziladi
@@ -39,7 +51,7 @@ export async function syncItemsToGoogleSheets(items: ScannedItem[]): Promise<Syn
           shift: shiftValue,         // -> Смена 1 / Смена 2 / Смена 3 / Смена 4
           operator: item.operator,
           tableNumber: item.tableNumber || '—', // -> Номер стола
-          boxNumber: item.boxNumber,
+          boxNumber: boxNumberValue,
           targetBox: targetBoxValue, // -> Куда переложен (Новый короб)
           pvz: pvzValue,
           barcode: item.barcode,

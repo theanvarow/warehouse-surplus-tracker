@@ -187,13 +187,23 @@ export async function GET(req: NextRequest) {
         // Ustunlar:
         // 0: №, 1: Дата, 2: Смена, 3: Сотрудник, 4: Номер коруба, 5: Шк товар, 6: Кол, 7: новый коруба, 8: ПВЗ, 9: Причина, 10: Номер стол
         const countNum = parseInt(cols[6], 10);
+        let parsedBoxNumber = cols[4] || '';
+        const upperParsedBox = parsedBoxNumber.toUpperCase();
+        if (
+          upperParsedBox.includes('GRUZ') ||
+          upperParsedBox.includes('ГРУЗ') ||
+          upperParsedBox.includes('BEZ') ||
+          upperParsedBox.includes('БЕЗ')
+        ) {
+          parsedBoxNumber = 'БЕЗ ГРУЗОМЕСТА';
+        }
 
         parsedItems.push({
           id: 'sheet_row_' + (cols[0] || i),
           timestamp: cols[1] || '',
           shift: cols[2] || '',
           operator: cols[3] || '',
-          boxNumber: cols[4] || '',
+          boxNumber: parsedBoxNumber,
           barcode: (cols[5] || '').replace(/^'/, ''),
           count: isNaN(countNum) || countNum <= 0 ? 1 : countNum,
           targetBox: cols[7] || '—',
