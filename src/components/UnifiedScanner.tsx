@@ -493,7 +493,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       }
 
       // ⚡ INSTANT OPTIMISTIC RESET: Darhol ekranni tozalaymiz va xabarni chiqaramiz (0.01 soniya!)
-      const currentBoxDisplay = boxNumber.trim().toUpperCase();
+      const currentBoxDisplay = finalBoxNumber;
       const totalCount = items.reduce((s, i) => s + (i.count || 1), 0);
 
       setSuccessToast(
@@ -513,7 +513,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       boxRef.current?.focus();
 
       // Orqa fonda (background) Google Sheets ga yuborish: operator kutib qolmaydi!
-      onFinishSession(currentBoxDisplay, finalTargetBox, finalPvz, updatedItems).then((syncResult) => {
+      onFinishSession(finalBoxNumber, finalTargetBox, finalPvz, updatedItems).then((syncResult) => {
         if (syncResult && syncResult.offline) {
           setSuccessToast(
             language === 'uz'
@@ -634,7 +634,19 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 ref={boxRef}
                 type="text"
                 value={boxNumber}
-                onChange={(e) => setBoxNumber(e.target.value.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase())}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^a-zA-Z0-9а-яА-ЯёЁ\-_ ]/g, '').toUpperCase();
+                  if (
+                    val.includes('GRUZ') ||
+                    val.includes('ГРУЗ') ||
+                    val.includes('BEZ') ||
+                    val.includes('БЕЗ')
+                  ) {
+                    setBoxNumber('БЕЗ ГРУЗОМЕСТА');
+                  } else {
+                    setBoxNumber(val);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();

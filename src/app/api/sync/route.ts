@@ -43,6 +43,26 @@ export async function POST(req: NextRequest) {
 
     // Append items action (50 ta xodim bir vaqtda yozganda LockService/Server band bo'lmasligi uchun qayta urinish mexanizmi)
     if (scriptUrl) {
+      // Server tomonida qat'iy normallashtirish: eski brauzer keshidan kelsa ham 'БЕЗ ГРУЗОМЕСТА' ga o'giriladi
+      if (Array.isArray(body.items)) {
+        body.items = body.items.map((item: any) => {
+          let boxVal = String(item.boxNumber || '').trim();
+          const upper = boxVal.toUpperCase();
+          if (
+            upper.includes('GRUZ') ||
+            upper.includes('ГРУЗ') ||
+            upper.includes('BEZ') ||
+            upper.includes('БЕЗ')
+          ) {
+            boxVal = 'БЕЗ ГРУЗОМЕСТА';
+          }
+          return {
+            ...item,
+            boxNumber: boxVal,
+          };
+        });
+      }
+
       let lastError = '';
       const maxRetries = 3;
 
