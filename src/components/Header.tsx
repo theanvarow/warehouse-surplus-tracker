@@ -18,7 +18,8 @@ import {
   LogOut,
   MapPin,
   CheckCircle2,
-  CloudOff
+  CloudOff,
+  RotateCw
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -32,6 +33,8 @@ interface HeaderProps {
   pendingCount?: number;
   currentPvz?: string;
   onChangePvz?: () => void;
+  isNewVersionAvailable?: boolean;
+  onReloadNewVersion?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -45,6 +48,8 @@ export const Header: React.FC<HeaderProps> = ({
   pendingCount = 0,
   currentPvz,
   onChangePvz,
+  isNewVersionAvailable = false,
+  onReloadNewVersion,
 }) => {
   const t = useTranslation(language);
   const [soundOn, setSoundOn] = useState<boolean>(true);
@@ -236,6 +241,19 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             </div>
+          )}
+
+          {/* New Version Notification Badge */}
+          {isNewVersionAvailable && (
+            <button
+              onClick={onReloadNewVersion}
+              type="button"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/25 animate-pulse cursor-pointer shrink-0"
+              title={language === 'uz' ? 'Yangi versiyaga yangilash uchun bosing' : 'Нажмите для обновления на новую версию'}
+            >
+              <RotateCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+              <span>{language === 'uz' ? 'Yangi versiya 🔄' : 'Обновить 🔄'}</span>
+            </button>
           )}
 
           {/* Sound Toggle Button */}

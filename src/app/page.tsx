@@ -42,6 +42,14 @@ export default function Home() {
   const [allItems, setAllItems] = useState<ScannedItem[]>([]);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [isClientReady, setIsClientReady] = useState<boolean>(false);
+  const [isNewVersionAvailable, setIsNewVersionAvailable] = useState<boolean>(false);
+  const currentBuildIdRef = React.useRef<string | null>(null);
+  const newVersionDetectedRef = React.useRef<boolean>(false);
+  const userSessionRef = React.useRef<UserSession | null>(null);
+
+  useEffect(() => {
+    userSessionRef.current = userSession;
+  }, [userSession]);
 
   // Fetch latest items directly from Google Sheets
   const refreshFromGoogleSheets = async () => {
@@ -84,6 +92,37 @@ export default function Home() {
     // Har 25 soniyada Google Sheets dan yangilab turish
     const syncInterval = setInterval(refreshFromGoogleSheets, 25000);
 
+    // ⏰ Har 30 soniyada yangi versiya chiqqanini tekshirish (10 ta kompyuter uchun avto-yangilanish)
+    const checkVersion = async () => {
+      try {
+        const res = await fetch('/api/version', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.buildId) {
+            if (!currentBuildIdRef.current) {
+              currentBuildIdRef.current = data.buildId;
+            } else if (currentBuildIdRef.current !== data.buildId) {
+              setIsNewVersionAvailable(true);
+              newVersionDetectedRef.current = true;
+              // Agar xodim tizimga kirmagan bo'lsa (kirish oynasida tursa), darhol avtomatik refresh qilamiz
+              if (!userSessionRef.current) {
+                console.log('🔄 Yangi dastur versiyasi aniqlandi. Oyna avtomatik yangilanmoqda...');
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Version check error:', err);
+      }
+    };
+
+    checkVersion();
+    const versionInterval = setInterval(checkVersion, 30000);
+    window.addEventListener('focus', checkVersion);
+
     // ⏰ Smena almashish vaqtlarini (Ertalab 09:00 va Kechki 21:00) har 5 soniyada tekshirib,
     // vaqti kelishi bilan avtomatik ravishda xavfsizlik uchun hisobdan chiqarib yuborish
     const shiftCheckInterval = setInterval(() => {
@@ -102,7 +141,9 @@ export default function Home() {
 
     return () => {
       clearInterval(syncInterval);
+      clearInterval(versionInterval);
       clearInterval(shiftCheckInterval);
+      window.removeEventListener('focus', checkVersion);
     };
   }, []);
 
@@ -200,6 +241,13 @@ export default function Home() {
     storageService.addBoxToHistory(completedBox);
     setAllItems(storageService.getAllItems());
 
+    // Agar fonda yangi dastur versiyasi chiqqan bo'lsa, quti tugashi bilanoq sahifani avtomatik xavfsiz yangilaymiz!
+    if (newVersionDetectedRef.current) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    }
+
     // Sync to Google Sheets
     try {
       const syncResult = await syncItemsToGoogleSheets(normalizedItems);
@@ -241,10 +289,41 @@ export default function Home() {
         onLogout={handleLogout}
         onChangeShift={() => setIsShiftSelecting(true)}
         pendingCount={pendingCount}
+        isNewVersionAvailable={isNewVersionAvailable}
+        onReloadNewVersion={() => window.location.reload()}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 relative z-10">
+        {/* Yangi versiya chiqqanda operatorga ko'rsatiladigan bildirishnoma */}
+        {isNewVersionAvailable && (
+          <div className="mb-4 bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-emerald-500/20 border border-emerald-500/40 p-3 sm:p-4 rounded-2xl shadow-lg backdrop-blur-md flex flex-wrap items-center justify-between gap-3 animate-pulse">
+            <div className="flex items-center space-x-3">
+              <span className="flex h-3 w-3 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+              <div>
+                <p className="text-xs sm:text-sm font-extrabold text-white">
+                  {language === 'uz'
+                    ? "🚀 Dasturning yangi versiyasi tayyor! (Ushbu quti yopilganda avtomatik yangilanadi)"
+                    : "🚀 Готова новая версия программы! (Обновится автоматически после закрытия коробки)"}
+                </p>
+                <p className="text-[11px] text-slate-300 font-medium">
+                  {language === 'uz'
+                    ? "Hech qanday ma'lumot yo'qolmaydi. Xohlasangiz, hoziroq yangilashingiz mumkin:"
+                    : "Данные не потеряются. При желании можете обновить прямо сейчас:"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center space-x-1.5"
+            >
+              <span>{language === 'uz' ? "Hoziroq yangilash 🔄" : "Обновить сейчас 🔄"}</span>
+            </button>
+          </div>
+        )}
         {/* TAB 1: UNIFIED SCANNER WORKFLOW (Korup, PVZ, Tovar Barcode in 1 Screen) */}
         {currentTab === 'scanner' && (
           <>
