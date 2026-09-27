@@ -167,6 +167,15 @@ const CITY_DICT: Record<string, { ru: string; uz: string; region: string }> = {
   'ФРГ': { ru: 'Фергана', uz: 'Fargʻona', region: 'fergana' },
   'ЯГЖ': { ru: 'Янгиюль', uz: 'Yangiyoʻl', region: 'tashkent' },
   'АТН': { ru: 'Алтынабад', uz: 'Oltinobod', region: 'regions' },
+  'БУС': { ru: 'Бустон', uz: 'Boʻston', region: 'regions' },
+  'ПАМ': { ru: 'Пап', uz: 'Pop', region: 'fergana' },
+  'КПР': { ru: 'Кунград', uz: 'Qoʻngʻirot', region: 'regions' },
+  'ХУМ': { ru: 'Хумо', uz: 'Xumo', region: 'tashkent' },
+  'КРТ': { ru: 'Каракуль', uz: 'Qorakoʻl', region: 'bukhara' },
+  'КАГ': { ru: 'Каган', uz: 'Kogon', region: 'bukhara' },
+  'ЯНР': { ru: 'Янгирабат', uz: 'Yangirabot', region: 'bukhara' },
+  'КЗТ': { ru: 'Кызылтепа', uz: 'Qiziltepa', region: 'bukhara' },
+  'БГТ': { ru: 'Багат', uz: 'Bogʻot', region: 'regions' },
 };
 
 // Lotin -> Kirill o'girish
