@@ -99,13 +99,10 @@ export default function Home() {
             } else if (currentBuildIdRef.current !== data.buildId) {
               setIsNewVersionAvailable(true);
               newVersionDetectedRef.current = true;
-              // Agar xodim tizimga kirmagan bo'lsa (kirish oynasida tursa), darhol avtomatik refresh qilamiz
-              if (!userSessionRef.current) {
-                console.log('🔄 Yangi dastur versiyasi aniqlandi. Oyna avtomatik yangilanmoqda...');
-                setTimeout(() => {
-                  window.location.reload();
-                }, 2000);
-              }
+              console.log('🔄 Yangi dastur versiyasi aniqlandi. Barcha kompyuterlar yangi kodga o`tishi uchun oyna avtomatik yangilanmoqda...');
+              setTimeout(() => {
+                window.location.reload();
+              }, 3000);
             }
           }
         }

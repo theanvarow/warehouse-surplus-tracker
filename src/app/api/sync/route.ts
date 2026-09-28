@@ -240,14 +240,23 @@ export async function GET(req: NextRequest) {
       parsedItems.reverse();
 
       // Keshga saqlaymiz (keyingi xodimlar bir zumda olishi uchun)
-      cachedSheetItems = parsedItems;
+      // Trafikni 98% ga kamaytirish uchun faqat oxirgi 150 ta eng yangi tovarlarni qaytaramiz
+      const recentItems = parsedItems.slice(0, 150);
+      cachedSheetItems = recentItems;
       lastCacheTime = Date.now();
 
-      return NextResponse.json({
-        success: true,
-        total: parsedItems.length,
-        items: parsedItems
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          total: recentItems.length,
+          items: recentItems
+        },
+        {
+          headers: {
+            'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
+          }
+        }
+      );
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
