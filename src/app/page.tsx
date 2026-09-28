@@ -86,14 +86,9 @@ export default function Home() {
 
     setIsClientReady(true);
 
-    // Google Sheets dan eng oxirgi ma'lumotlarni tortib olamiz
-    refreshFromGoogleSheets();
-
-    // Har 25 soniyada Google Sheets dan yangilab turish
-    const syncInterval = setInterval(refreshFromGoogleSheets, 25000);
-
-    // ⏰ Har 30 soniyada yangi versiya chiqqanini tekshirish (10 ta kompyuter uchun avto-yangilanish)
+    // ⏰ Versiya tekshiruvi: Har 2 daqiqada (faqat oyna ochiq turganda) tekshiriladi
     const checkVersion = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       try {
         const res = await fetch('/api/version', { cache: 'no-store' });
         if (res.ok) {
@@ -120,7 +115,7 @@ export default function Home() {
     };
 
     checkVersion();
-    const versionInterval = setInterval(checkVersion, 30000);
+    const versionInterval = setInterval(checkVersion, 120000); // 2 daqiqada 1 marta (trafik tejamkorligi uchun)
     window.addEventListener('focus', checkVersion);
 
     // ⏰ Smena almashish vaqtlarini (Ertalab 09:00 va Kechki 21:00) har 5 soniyada tekshirib,
@@ -140,12 +135,18 @@ export default function Home() {
     }, 5000);
 
     return () => {
-      clearInterval(syncInterval);
       clearInterval(versionInterval);
       clearInterval(shiftCheckInterval);
       window.removeEventListener('focus', checkVersion);
     };
   }, []);
+
+  // Faqat foydalanuvchi "Dashboard" bo'limiga o'tgandagina Google Sheets dan yuklanadi (ortiqcha trafik sarflanmaydi)
+  useEffect(() => {
+    if (currentTab === 'dashboard') {
+      refreshFromGoogleSheets();
+    }
+  }, [currentTab]);
 
   // Format current date and time
   const getFormattedTimestamp = () => {

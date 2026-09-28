@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 50 kishilik bir vaqtda ishlash uchun Server In-Memory Keshi
+// Server In-Memory Keshi (Trafikni tejash uchun 60 soniya)
 let cachedSheetItems: any[] | null = null;
 let lastCacheTime = 0;
-const CACHE_TTL_MS = 15000; // 15 soniya server keshi
+const CACHE_TTL_MS = 60000; // 60 soniya server keshi
 
 export async function POST(req: NextRequest) {
   try {
