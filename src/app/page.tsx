@@ -54,7 +54,7 @@ export default function Home() {
   // Fetch latest items directly from Google Sheets
   const refreshFromGoogleSheets = async () => {
     try {
-      const res = await fetch('/api/sync?action=fetch_sheet_items', { cache: 'no-store' });
+      const res = await fetch('/api/sync?action=fetch_sheet_items');
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.items) && data.items.length > 0) {
@@ -86,11 +86,12 @@ export default function Home() {
 
     setIsClientReady(true);
 
-    // ⏰ Versiya tekshiruvi: Har 2 daqiqada (faqat oyna ochiq turganda) tekshiriladi
+    // ⏰ Versiya tekshiruvi: Har 5 daqiqada (faqat oyna ochiq turganda) tekshiriladi
     const checkVersion = async () => {
       if (typeof document !== 'undefined' && document.hidden) return;
       try {
-        const res = await fetch('/api/version', { cache: 'no-store' });
+        const res = await fetch('/api/version');
+        if (res.status === 304) return;
         if (res.ok) {
           const data = await res.json();
           if (data.buildId) {
@@ -112,7 +113,7 @@ export default function Home() {
     };
 
     checkVersion();
-    const versionInterval = setInterval(checkVersion, 120000); // 2 daqiqada 1 marta (trafik tejamkorligi uchun)
+    const versionInterval = setInterval(checkVersion, 300000); // 5 daqiqada 1 marta (trafik tejamkorligi uchun)
     window.addEventListener('focus', checkVersion);
 
     // ⏰ Smena almashish vaqtlarini (Ertalab 09:00 va Kechki 21:00) har 5 soniyada tekshirib,

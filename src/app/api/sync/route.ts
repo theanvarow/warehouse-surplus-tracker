@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Server In-Memory Keshi (Trafikni tejash uchun 60 soniya)
+// Server In-Memory Keshi (Trafikni tejash uchun 120 soniya)
 let cachedSheetItems: any[] | null = null;
 let lastCacheTime = 0;
-const CACHE_TTL_MS = 60000; // 60 soniya server keshi
+const CACHE_TTL_MS = 120000; // 120 soniya (2 daqiqa) server keshi
 
 export async function POST(req: NextRequest) {
   try {
@@ -138,14 +138,21 @@ export async function GET(req: NextRequest) {
   if (action === 'fetch_sheet_items') {
     try {
       const now = Date.now();
-      // Agar kesh mavjud bo'lsa va 15 soniyadan eski bo'lmasa, Google ga bormasdan keshdan qaytaramiz (50 ta xodim bir vaqtda so'rov berganda)
+      // Agar kesh mavjud bo'lsa va 120 soniyadan eski bo'lmasa, Google ga bormasdan keshdan qaytaramiz (50 ta xodim bir vaqtda so'rov berganda)
       if (cachedSheetItems && now - lastCacheTime < CACHE_TTL_MS) {
-        return NextResponse.json({
-          success: true,
-          cached: true,
-          total: cachedSheetItems.length,
-          items: cachedSheetItems
-        });
+        return NextResponse.json(
+          {
+            success: true,
+            cached: true,
+            total: cachedSheetItems.length,
+            items: cachedSheetItems
+          },
+          {
+            headers: {
+              'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
+            }
+          }
+        );
       }
 
       const SHEET_ID = '1ITy_OER1O6YIjoopZUR31rBxj9v8bwsBfp1rUalJO3A';
@@ -155,12 +162,19 @@ export async function GET(req: NextRequest) {
       if (!csvRes.ok) {
         // Agar Google bir onda band bo'lsa va eski kesh bo'lsa, xato o'rniga eski keshni beramiz
         if (cachedSheetItems) {
-          return NextResponse.json({
-            success: true,
-            cached: true,
-            total: cachedSheetItems.length,
-            items: cachedSheetItems
-          });
+          return NextResponse.json(
+            {
+              success: true,
+              cached: true,
+              total: cachedSheetItems.length,
+              items: cachedSheetItems
+            },
+            {
+              headers: {
+                'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
+              }
+            }
+          );
         }
         return NextResponse.json({ success: false, error: 'Jadvaldan yuklab bo\'lmadi' }, { status: 500 });
       }
