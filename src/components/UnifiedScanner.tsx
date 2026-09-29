@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ITEM_REASONS, ItemReason, Language, ScannedItem, UserSession } from '@/lib/types';
 import { useTranslation } from '@/lib/translations';
 import { soundManager } from '@/lib/sound';
-import { searchPvz, getRecentPvzList, addRecentPvz, PvzItem, toCyrillic, normalizeChars } from '@/lib/pvzList';
+import { searchPvz, getRecentPvzList, addRecentPvz, PvzItem, toCyrillic, normalizeChars, getOfficialPvzCode, isValidPvz } from '@/lib/pvzList';
 import {
   Package,
   MapPin,
@@ -51,11 +51,12 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
   // Reason Selection Modal State
   const [pendingBarcode, setPendingBarcode] = useState<string | null>(null);
 
-  // PVZ Smart Autocomplete State
+  // PVZ Smart Autocomplete & Strict Validation State
   const [pvzSuggestions, setPvzSuggestions] = useState<PvzItem[]>([]);
   const [isPvzDropdownOpen, setIsPvzDropdownOpen] = useState<boolean>(false);
   const [selectedPvzIndex, setSelectedPvzIndex] = useState<number>(-1);
   const [recentPvzList, setRecentPvzList] = useState<string[]>([]);
+  const [pvzError, setPvzError] = useState<string | null>(null);
   const pvzContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,79 +74,113 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // PVZ tanlanganda
+  // PVZ tanlanganda (faqat rasmiy tasdiqlangan kodlar qabul qilinadi)
   const handleSelectPvz = (selectedCode: string) => {
-    setPvz(selectedCode);
-    addRecentPvz(selectedCode);
+    const official = getOfficialPvzCode(selectedCode) || selectedCode;
+    setPvz(official);
+    setPvzError(null);
+    addRecentPvz(official);
     setRecentPvzList(getRecentPvzList());
     setIsPvzDropdownOpen(false);
     setSelectedPvzIndex(-1);
     soundManager.playItemScanSound();
-    barcodeRef.current?.focus();
+    setTimeout(() => {
+      barcodeRef.current?.focus();
+    }, 50);
   };
 
   // PVZ inputiga harf yoki raqam yozilganda
   const handlePvzChange = (val: string) => {
     setPvz(val);
+    setPvzError(null);
     const matches = searchPvz(val, 30);
     setPvzSuggestions(matches);
-    setIsPvzDropdownOpen(matches.length > 0);
+    setIsPvzDropdownOpen(true);
     setSelectedPvzIndex(-1);
   };
 
-  // PVZ inputida tugmalar harakati (ArrowDown, ArrowUp, Enter, Escape)
+  // PVZ inputida tugmalar harakati (Faqat ro'yxatdagilarni tanlashga ruxsat beradi)
   const handlePvzKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (isPvzDropdownOpen && pvzSuggestions.length > 0) {
-      if (e.key === 'ArrowDown') {
+    if (e.key === 'ArrowDown') {
+      if (isPvzDropdownOpen && pvzSuggestions.length > 0) {
         e.preventDefault();
         setSelectedPvzIndex((prev) => (prev < pvzSuggestions.length - 1 ? prev + 1 : 0));
-        return;
       }
-      if (e.key === 'ArrowUp') {
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      if (isPvzDropdownOpen && pvzSuggestions.length > 0) {
         e.preventDefault();
         setSelectedPvzIndex((prev) => (prev > 0 ? prev - 1 : pvzSuggestions.length - 1));
-        return;
       }
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        // 1. Agar foydalanuvchi strelkalar bilan biror PVZ ustiga borgan bo'lsa
-        if (selectedPvzIndex >= 0 && selectedPvzIndex < pvzSuggestions.length) {
-          handleSelectPvz(pvzSuggestions[selectedPvzIndex].code);
-          return;
-        }
-
-        // 2. Agar foydalanuvchi yozgan narsa 1-natijaga teng yoki mos kelsa (masalan: "tash-14" yoki "таш 14" -> "ТАШ-14")
-        const currentNorm = normalizeChars(toCyrillic(pvz));
-        const firstNorm = normalizeChars(toCyrillic(pvzSuggestions[0].code));
-        if (currentNorm && currentNorm === firstNorm) {
-          handleSelectPvz(pvzSuggestions[0].code);
-          return;
-        }
-
-        // 3. Aks holda foydalanuvchi kiritgan qiymatni qabul qilamiz
-        if (pvz.trim()) {
-          handleSelectPvz(pvz.trim());
-        } else {
-          setIsPvzDropdownOpen(false);
-          barcodeRef.current?.focus();
-        }
-        return;
-      }
-      if (e.key === 'Escape') {
-        setIsPvzDropdownOpen(false);
-        return;
-      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      setIsPvzDropdownOpen(false);
+      return;
     }
 
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (pvz.trim()) {
-        handleSelectPvz(pvz.trim());
-      } else {
-        setIsPvzDropdownOpen(false);
-        barcodeRef.current?.focus();
+      // 1. Agar foydalanuvchi strelkalar bilan biror PVZ ustiga borgan bo'lsa
+      if (isPvzDropdownOpen && selectedPvzIndex >= 0 && selectedPvzIndex < pvzSuggestions.length) {
+        handleSelectPvz(pvzSuggestions[selectedPvzIndex].code);
+        return;
       }
+
+      // 2. Agar qidiruv bo'yicha takliflar chiqib turgan bo'lsa va 1-taklif mavjud bo'lsa
+      if (isPvzDropdownOpen && pvzSuggestions.length > 0) {
+        handleSelectPvz(pvzSuggestions[0].code);
+        return;
+      }
+
+      // 3. Agar to'g'ridan-to'g'ri rasmiy kod yoki maxsus qiymat kiritilgan bo'lsa
+      const official = getOfficialPvzCode(pvz);
+      if (official) {
+        handleSelectPvz(official);
+        return;
+      }
+
+      // 4. Agar ro'yxatda yo'q ortiqcha narsa yozilgan bo'lsa — QAT'IY BEKOR QILINADI!
+      if (pvz.trim()) {
+        soundManager.playErrorSound();
+        setPvzError(
+          language === 'uz'
+            ? `❌ «${pvz}» ro'yxatda mavjud emas! Faqat rasmiy PVZ larni tanlang.`
+            : `❌ «${pvz}» не существует в списке! Выберите ПВЗ из списка.`
+        );
+        setPvz('');
+        setIsPvzDropdownOpen(false);
+        return;
+      }
+
+      // Bo'sh bo'lsa tovar shtrix-kodiga o'tadi
+      setIsPvzDropdownOpen(false);
+      barcodeRef.current?.focus();
     }
+  };
+
+  // Kursorni boshqa maydonga olganda (onBlur) tekshiruv
+  const handlePvzBlur = () => {
+    setTimeout(() => {
+      if (!pvz.trim()) {
+        setPvzError(null);
+        return;
+      }
+      const official = getOfficialPvzCode(pvz);
+      if (official) {
+        setPvz(official);
+        setPvzError(null);
+      } else {
+        soundManager.playErrorSound();
+        setPvzError(
+          language === 'uz'
+            ? `❌ «${pvz}» ro'yxatda mavjud emas! Bekor qilindi.`
+            : `❌ «${pvz}» не существует в списке! Сброшено.`
+        );
+        setPvz('');
+      }
+    }, 250);
   };
 
   // Input Refs for smooth auto-focus
@@ -421,6 +456,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     setBoxNumber('');
     setTargetBox('');
     setPvz('');
+    setPvzError(null);
     setBarcodeInput('');
     setItems([]);
     setLastScannedBarcode(null);
@@ -471,13 +507,31 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       return;
     }
 
+    // PVZ ro'yxatda mavjudligini qat'iy tekshirish
+    const rawPvz = pvz.trim();
+    if (rawPvz && !isValidPvz(rawPvz)) {
+      soundManager.playErrorSound();
+      alert(
+        language === 'uz'
+          ? `❌ «${rawPvz}» ro'yxatda mavjud emas! Iltimos, faqat rasmiy ro'yxatdagi PVZ ni tanlang yoki «ИНЦИДЕНТ» / «НЕТ ПВЗ» tugmasini bosing.`
+          : `❌ «${rawPvz}» не существует в списке! Пожалуйста, выберите официальный ПВЗ или нажмите «ИНЦИДЕНТ» / «НЕТ ПВЗ».`
+      );
+      setPvzError(
+        language === 'uz'
+          ? '❌ Ro\'yxatda yo\'q PVZ!'
+          : '❌ ПВЗ не из списка!'
+      );
+      pvzRef.current?.focus();
+      return;
+    }
+
     setIsFinishing(true);
     soundManager.playFinishBoxSound();
 
     try {
       const finalTargetBox = cleanTargetBox;
       const finalBoxNumber = cleanBox;
-      const finalPvz = pvz.trim() || '—';
+      const finalPvz = getOfficialPvzCode(rawPvz) || '—';
       const updatedItems = items.map((i) => ({
         ...i,
         boxNumber: finalBoxNumber,
@@ -713,7 +767,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             </div>
           </div>
 
-          {/* FIELD 2: PVZ INPUT WITH SMART AUTOCOMPLETE */}
+          {/* FIELD 2: PVZ INPUT WITH STRICT AUTOCOMPLETE */}
           <div ref={pvzContainerRef} className="space-y-3 relative">
             {/* Quick button row above label: Инцидент & Нет ПВЗ (Equal width and height with safe gap) */}
             <div className="h-9 flex items-center gap-3 sm:gap-3.5">
@@ -748,12 +802,26 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               </button>
             </div>
 
-            {/* Label row: full text without truncation */}
-            <div className="h-5 flex items-center">
+            {/* Label row: full text with validity badge */}
+            <div className="h-5 flex items-center justify-between">
               <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1.5 whitespace-nowrap">
                 <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span>2. {language === 'uz' ? 'PVZ' : 'ПВЗ'}</span>
+                <span>2. {language === 'uz' ? 'PVZ (Tanlash shart)' : 'ПВЗ (Выбор из списка)'}</span>
               </label>
+
+              {pvz.trim() && (
+                isValidPvz(pvz) ? (
+                  <span className="text-[11px] font-extrabold text-emerald-400 bg-emerald-950/80 border border-emerald-500/50 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                    <span>✓</span>
+                    <span>{getOfficialPvzCode(pvz)}</span>
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-extrabold text-rose-400 bg-rose-950/80 border border-rose-500/50 px-2 py-0.5 rounded-md flex items-center space-x-1">
+                    <span>✕</span>
+                    <span>{language === 'uz' ? 'Ro\'yxatda yo\'q!' : 'Нет в списке!'}</span>
+                  </span>
+                )
+              )}
             </div>
 
             <div className="relative">
@@ -765,12 +833,19 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 onFocus={() => {
                   const matches = searchPvz(pvz, 30);
                   setPvzSuggestions(matches);
-                  setIsPvzDropdownOpen(matches.length > 0);
+                  setIsPvzDropdownOpen(true);
                   setSelectedPvzIndex(-1);
                 }}
+                onBlur={handlePvzBlur}
                 onKeyDown={handlePvzKeyDown}
-                placeholder={language === 'uz' ? 'Kod yoki nom (mas: tosh, 12, gul)' : 'Код или номер (напр: таш, 12, гул)'}
-                className="w-full px-4 py-3.5 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all uppercase"
+                placeholder={language === 'uz' ? 'Ro\'yxatdan qidiring (mas: tosh, 12, gul)' : 'Поиск из списка (напр: таш, 12, гул)'}
+                className={`w-full px-4 py-3.5 bg-[#191b26] border rounded-xl text-white placeholder-slate-500 font-mono text-base font-black focus:outline-none focus:ring-2 transition-all uppercase ${
+                  pvz.trim() && !isValidPvz(pvz)
+                    ? 'border-rose-500 text-rose-200 focus:border-rose-400 focus:ring-rose-500/30'
+                    : pvz.trim() && isValidPvz(pvz)
+                    ? 'border-emerald-500 text-emerald-100 focus:border-emerald-400 focus:ring-emerald-500/30'
+                    : 'border-[#2e3347] focus:border-indigo-500 focus:ring-indigo-500/20'
+                }`}
                 autoComplete="off"
               />
 
@@ -779,6 +854,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                   type="button"
                   onClick={() => {
                     setPvz('');
+                    setPvzError(null);
                     setIsPvzDropdownOpen(false);
                     pvzRef.current?.focus();
                   }}
@@ -789,12 +865,53 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               )}
             </div>
 
+            {/* Error Message Alert */}
+            {pvzError && (
+              <div className="flex items-center space-x-2 text-rose-400 bg-rose-950/60 border border-rose-800/80 px-3 py-1.5 rounded-xl text-xs font-bold animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{pvzError}</span>
+              </div>
+            )}
+
             {/* Autocomplete Dropdown */}
             {isPvzDropdownOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#13151f] border-2 border-indigo-500/80 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-800">
+              <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#13151f] border-2 border-indigo-500/80 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto divide-y divide-slate-800">
+                {/* Recent PVZ Badges inside dropdown when query is empty */}
+                {recentPvzList.length > 0 && !pvz.trim() && (
+                  <div className="p-2.5 bg-[#171926] border-b border-slate-800">
+                    <div className="text-[10px] font-black uppercase text-indigo-400 mb-1.5 flex items-center space-x-1">
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>{language === 'uz' ? 'Oxirgi tanlanganlar:' : 'Недавно выбранные:'}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {recentPvzList.slice(0, 5).map((code) => (
+                        <button
+                          key={code}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectPvz(code);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/60 text-xs font-mono font-bold text-indigo-300 transition-colors cursor-pointer"
+                        >
+                          {code}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {pvzSuggestions.length === 0 ? (
-                  <div className="p-3 text-center text-slate-400 text-xs font-medium">
-                    {language === 'uz' ? 'Hech qanday PVZ topilmadi' : 'ПВЗ не найден'}
+                  <div className="p-4 text-center space-y-1.5 bg-[#171926]">
+                    <div className="text-rose-400 text-xs font-extrabold flex items-center justify-center space-x-1">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{language === 'uz' ? 'Bunday PVZ ro\'yxatda yo\'q!' : 'ПВЗ не найден в списке!'}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      {language === 'uz'
+                        ? 'Faqat rasmiy ro\'yxatdagi 2460+ ta PVZ lardan birini tanlash mumkin'
+                        : 'Можно выбирать только из официального списка 2460+ ПВЗ'}
+                    </p>
                   </div>
                 ) : (
                   pvzSuggestions.map((item, index) => {
@@ -807,8 +924,8 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                           e.preventDefault();
                           handleSelectPvz(item.code);
                         }}
-                        className={`w-full text-left px-4 py-2.5 flex items-center justify-between text-xs transition-colors ${
-                          isSelected ? 'bg-indigo-600/30 text-white font-bold' : 'hover:bg-slate-800/60 text-slate-300'
+                        className={`w-full text-left px-4 py-2.5 flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                          isSelected ? 'bg-indigo-600/40 text-white font-bold' : 'hover:bg-slate-800/80 text-slate-300'
                         }`}
                       >
                         <div className="flex items-center space-x-2.5">

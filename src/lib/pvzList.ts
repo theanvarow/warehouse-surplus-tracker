@@ -330,6 +330,82 @@ const { publicList: BUILT_PUBLIC, indexedList: INDEXED_DB } = buildComprehensive
 export const ALL_PVZ_DATABASE: PvzItem[] = BUILT_PUBLIC;
 export const POPULAR_PVZ_LIST: PvzItem[] = BUILT_PUBLIC;
 
+// Maxsus ruxsat etilgan rasmiy holatlar
+export const SPECIAL_PVZ_VALUES = ['ИНЦИДЕНТ', 'НЕТ ПВЗ', '—'] as const;
+
+// Barcha 2460+ ta rasmiy PVZ larni bir zumda (O(1)) tekshirish va rasmiy kodga o'tkazish xaritasi
+const VALID_PVZ_MAP = new Map<string, PvzItem>();
+
+for (const item of INDEXED_DB) {
+  const code = item.code;
+  const upper = code.toUpperCase();
+  VALID_PVZ_MAP.set(upper, item);
+  VALID_PVZ_MAP.set(normalizeChars(upper), item);
+  VALID_PVZ_MAP.set(normalizeChars(toCyrillic(upper)), item);
+  VALID_PVZ_MAP.set(normalizeChars(toLatin(upper)), item);
+}
+
+/**
+ * Matn rasmiy PVZ yoki maxsus qiymatga mos keladimi tekshiradi va rasmiy kodni qaytaradi.
+ * Agar xodim ortiqcha/noto'g'ri narsa yozgan bo'lsa, null qaytaradi.
+ */
+export function getOfficialPvzCode(input: string): string | null {
+  if (!input) return null;
+  const raw = input.trim();
+  if (!raw) return null;
+
+  const upper = raw.toUpperCase();
+  if (upper === 'ИНЦИДЕНТ') return 'ИНЦИДЕНТ';
+  if (upper === 'НЕТ ПВЗ' || upper === 'НЕТПВЗ' || upper === 'NET PVZ' || upper === 'NETPVZ') return 'НЕТ ПВЗ';
+  if (upper === '—' || upper === '-' || upper === 'BEZ PVZ' || upper === 'БЕЗ ПВЗ') return '—';
+
+  // "ТАШ-12 - ПВЗ Ташкент №12" formatidan kodni ajratish
+  const cleanCode = upper.split(' - ')[0].trim();
+
+  // 1. To'g'ridan-to'g'ri moslik
+  if (VALID_PVZ_MAP.has(cleanCode)) {
+    return VALID_PVZ_MAP.get(cleanCode)!.code;
+  }
+
+  // 2. Normallashtirilgan moslik
+  const norm = normalizeChars(cleanCode);
+  if (VALID_PVZ_MAP.has(norm)) {
+    return VALID_PVZ_MAP.get(norm)!.code;
+  }
+
+  // 3. Kirillchaga o'girib moslash (masalan: "tash-14" yoki "таш 14" -> "ТАШ-14")
+  const normCyr = normalizeChars(toCyrillic(cleanCode));
+  if (VALID_PVZ_MAP.has(normCyr)) {
+    return VALID_PVZ_MAP.get(normCyr)!.code;
+  }
+
+  // 4. Lotinchaga o'girib moslash
+  const normLat = normalizeChars(toLatin(cleanCode));
+  if (VALID_PVZ_MAP.has(normLat)) {
+    return VALID_PVZ_MAP.get(normLat)!.code;
+  }
+
+  return null;
+}
+
+/**
+ * Berilgan PVZ haqiqatdan ham ro'yxatda bormi yoki maxsus qiymatmi?
+ */
+export function isValidPvz(input: string): boolean {
+  return getOfficialPvzCode(input) !== null;
+}
+
+/**
+ * PVZ haqidagi to'liq ma'lumotni olish
+ */
+export function getPvzItem(input: string): PvzItem | null {
+  if (!input) return null;
+  const code = getOfficialPvzCode(input);
+  if (!code) return null;
+  return VALID_PVZ_MAP.get(code.toUpperCase()) || null;
+}
+
+
 // 🔍 ULTRA-MOSLASHUVCHAN SMART PVZ QIDIRUVI (2460+ ta PVZ bo'yicha)
 export function searchPvz(query: string, limit = 25): PvzItem[] {
   const raw = (query || '').trim();

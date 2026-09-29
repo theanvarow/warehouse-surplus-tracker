@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Language } from '@/lib/types';
 import { useTranslation } from '@/lib/translations';
 import { soundManager } from '@/lib/sound';
-import { POPULAR_PVZ_LIST, PvzItem, getRecentPvzList, addRecentPvz } from '@/lib/pvzList';
+import { POPULAR_PVZ_LIST, PvzItem, getRecentPvzList, addRecentPvz, getOfficialPvzCode, isValidPvz } from '@/lib/pvzList';
 import {
   MapPin,
   Search,
@@ -100,8 +100,13 @@ export const PvzSelectorModal: React.FC<PvzSelectorModalProps> = ({
       if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
         const picked = suggestions[selectedIndex];
         handleConfirm(`${picked.code} - ${picked.name}`);
-      } else if (inputValue.trim()) {
-        handleConfirm(inputValue.trim());
+      } else if (suggestions.length > 0) {
+        const picked = suggestions[0];
+        handleConfirm(`${picked.code} - ${picked.name}`);
+      } else if (isValidPvz(inputValue)) {
+        handleConfirm(getOfficialPvzCode(inputValue)!);
+      } else {
+        soundManager.playErrorSound();
       }
     } else if (e.key === 'Escape' && onCancel) {
       onCancel();
@@ -168,11 +173,11 @@ export const PvzSelectorModal: React.FC<PvzSelectorModalProps> = ({
               className="w-full pl-12 pr-28 py-3.5 bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 rounded-2xl text-white placeholder-slate-500 font-bold text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
               autoComplete="off"
             />
-            {/* Direct confirm button inside input bar */}
-            {inputValue.trim() && (
+            {/* Direct confirm button inside input bar - only if valid */}
+            {inputValue.trim() && isValidPvz(inputValue) && (
               <button
                 type="button"
-                onClick={() => handleConfirm(inputValue)}
+                onClick={() => handleConfirm(getOfficialPvzCode(inputValue)!)}
                 className="absolute right-2 top-2 bottom-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-md flex items-center space-x-1.5 transition-all cursor-pointer"
               >
                 <span>{language === 'uz' ? 'Tanlash' : 'Выбрать'}</span>
@@ -184,11 +189,11 @@ export const PvzSelectorModal: React.FC<PvzSelectorModalProps> = ({
           <div className="flex items-center justify-between text-xs text-slate-400 px-1">
             <span className="flex items-center space-x-1">
               <Keyboard className="w-3.5 h-3.5 text-slate-500" />
-              <span>{language === 'uz' ? 'Enter — tasdiqlash, ↓↑ — tanlash' : 'Enter — подтвердить, ↓↑ — выбор'}</span>
+              <span>{language === 'uz' ? 'Enter — tanlash, ↓↑ — harakatlanish' : 'Enter — выбрать, ↓↑ — выбор'}</span>
             </span>
-            {inputValue.trim() && (
-              <span className="text-indigo-400 font-bold">
-                {language === 'uz' ? 'Ro\'yxatda yo\'q bo\'lsa ham Enter bosing' : 'Можно ввести любой текст'}
+            {inputValue.trim() && !isValidPvz(inputValue) && (
+              <span className="text-rose-400 font-bold">
+                {language === 'uz' ? '❌ Faqat ro\'yxatdagi PVZ tanlanishi shart' : '❌ Выбирайте только из списка'}
               </span>
             )}
           </div>
@@ -247,31 +252,18 @@ export const PvzSelectorModal: React.FC<PvzSelectorModalProps> = ({
           className="flex-1 overflow-y-auto pr-1 space-y-2 my-2 max-h-[260px] sm:max-h-[300px]"
         >
           {suggestions.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 space-y-3 bg-[#191b26] rounded-2xl border border-dashed border-[#2e3347] p-4">
-              <Building2 className="w-10 h-10 mx-auto text-slate-600" />
+            <div className="text-center py-8 text-slate-400 space-y-3 bg-[#191b26] rounded-2xl border border-dashed border-rose-800/40 p-4">
+              <Building2 className="w-10 h-10 mx-auto text-rose-500/70" />
               <div>
-                <p className="text-sm font-bold text-white">
+                <p className="text-sm font-bold text-rose-300">
                   {language === 'uz' ? `"${inputValue}" ro'yxatda topilmadi` : `"${inputValue}" не найден в списке`}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
                   {language === 'uz'
-                    ? 'Lekin uni qo\'lda kiritilgan ПВЗ sifatida to\'g\'ridan-to\'g\'ri saqlashingiz mumkin 👇'
-                    : 'Но вы можете сохранить его как пользовательский ПВЗ 👇'}
+                    ? 'Faqat rasmiy ro\'yxatdagi 2460+ ta PVZ lardan birini tanlash mumkin'
+                    : 'Разрешено выбирать только из официального списка 2460+ ПВЗ'}
                 </p>
               </div>
-
-              {inputValue.trim() && (
-                <button
-                  type="button"
-                  onClick={() => handleConfirm(inputValue)}
-                  className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-md shadow-indigo-600/30 transition-all cursor-pointer"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>
-                    {language === 'uz' ? `"${inputValue}" deb saqlash` : `Использовать "${inputValue}"`}
-                  </span>
-                </button>
-              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -318,16 +310,16 @@ export const PvzSelectorModal: React.FC<PvzSelectorModalProps> = ({
           )}
         </div>
 
-        {/* Bottom manual custom submit bar */}
-        {inputValue.trim() && (
+        {/* Bottom bar - only shown if a valid PVZ is recognized */}
+        {inputValue.trim() && isValidPvz(inputValue) && (
           <div className="pt-3 border-t border-[#2e3347] flex items-center justify-between gap-2 shrink-0">
             <span className="text-xs text-slate-400 truncate">
-              {language === 'uz' ? 'Tanlangan / Kiritilgan:' : 'Выбрано / Введено:'}{' '}
-              <strong className="text-white font-mono">{inputValue}</strong>
+              {language === 'uz' ? 'Tanlangan PVZ:' : 'Выбранный ПВЗ:'}{' '}
+              <strong className="text-emerald-400 font-mono font-bold">{getOfficialPvzCode(inputValue)}</strong>
             </span>
             <button
               type="button"
-              onClick={() => handleConfirm(inputValue)}
+              onClick={() => handleConfirm(getOfficialPvzCode(inputValue)!)}
               className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs sm:text-sm flex items-center space-x-1.5 shadow-md shadow-indigo-600/30 transition-all cursor-pointer shrink-0"
             >
               <span>{t.confirmPvzBtn}</span>
