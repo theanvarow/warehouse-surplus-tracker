@@ -176,7 +176,20 @@ const CITY_DICT: Record<string, { ru: string; uz: string; region: string }> = {
   'ЯНР': { ru: 'Янгирабат', uz: 'Yangirabot', region: 'bukhara' },
   'КЗТ': { ru: 'Кызылтепа', uz: 'Qiziltepa', region: 'bukhara' },
   'БГТ': { ru: 'Багат', uz: 'Bogʻot', region: 'regions' },
+  'АКК': { ru: 'Аккурган', uz: 'Oqqoʻrgʻon', region: 'tashkent' },
+  'СРС': { ru: 'Сариасия', uz: 'Sariosiyo', region: 'regions' },
+  'КТТ': { ru: 'Каттакурган', uz: 'Kattaqoʻrgʻon', region: 'samarkand' },
+  'КШТ': { ru: 'Куштепа', uz: 'Qoʻshtepa', region: 'fergana' },
+  'НГР': { ru: 'Нурабад', uz: 'Nurobod', region: 'samarkand' },
+  'МГБ': { ru: 'Мингбулак', uz: 'Mingbuloq', region: 'fergana' },
+  'БШЛ': { ru: 'Бешарык', uz: 'Beshariq', region: 'fergana' },
+  'ГТН': { ru: 'Гулистан', uz: 'Guliston', region: 'regions' },
+  'НФН': { ru: 'Навбахор', uz: 'Navbahor', region: 'bukhara' },
+  'ЖУШ': { ru: 'Жош', uz: 'Jush', region: 'samarkand' },
+  'СЛК': { ru: 'Салик', uz: 'Solik', region: 'regions' },
+  'ЧАМ': { ru: 'Чартак', uz: 'Chortoq', region: 'fergana' },
 };
+
 
 // Lotin -> Kirill o'girish
 export function toCyrillic(text: string): string {
