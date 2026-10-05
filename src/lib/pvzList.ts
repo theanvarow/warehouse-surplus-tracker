@@ -188,6 +188,10 @@ const CITY_DICT: Record<string, { ru: string; uz: string; region: string }> = {
   'ЖУШ': { ru: 'Жош', uz: 'Jush', region: 'samarkand' },
   'СЛК': { ru: 'Салик', uz: 'Solik', region: 'regions' },
   'ЧАМ': { ru: 'Чартак', uz: 'Chortoq', region: 'fergana' },
+  'ЧСТ': { ru: 'Чуст', uz: 'Chust', region: 'fergana' },
+  'ЧАР': { ru: 'Чартак', uz: 'Chortoq', region: 'fergana' },
+  'АКШ': { ru: 'АКШ', uz: 'AKSh', region: 'regions' },
+  'ЯДМ': { ru: 'ЯДМ', uz: 'YaDM', region: 'regions' },
 };
 
 
