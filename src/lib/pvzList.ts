@@ -192,6 +192,14 @@ const CITY_DICT: Record<string, { ru: string; uz: string; region: string }> = {
   'ЧАР': { ru: 'Чартак', uz: 'Chortoq', region: 'fergana' },
   'АКШ': { ru: 'АКШ', uz: 'AKSh', region: 'regions' },
   'ЯДМ': { ru: 'ЯДМ', uz: 'YaDM', region: 'regions' },
+  'ШИР': { ru: 'Ширин', uz: 'Shirin', region: 'regions' },
+  'КМН': { ru: 'Кармана', uz: 'Karmana', region: 'bukhara' },
+  'ВАД': { ru: 'Водиль', uz: 'Vodil', region: 'fergana' },
+  'КОШ': { ru: 'Кошкупыр', uz: 'Qoʻshkoʻpir', region: 'regions' },
+  'ЧРН': { ru: 'Чархин', uz: 'Charxin', region: 'samarkand' },
+  'ХАШ': { ru: 'ХАШ', uz: 'Xash', region: 'regions' },
+  'БОБ': { ru: 'БОБ', uz: 'Bob', region: 'regions' },
+  'ТБЛ': { ru: 'ТБЛ', uz: 'Tbl', region: 'regions' },
 };
 
 
