@@ -507,19 +507,20 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       return;
     }
 
-    // PVZ ro'yxatda mavjudligini qat'iy tekshirish
+    // PVZ tanlashni qat'iy majburiy qilish (bo'sh qolishi yoki «—» bo'lishi mutlaqo taqiqlanadi!)
     const rawPvz = pvz.trim();
-    if (rawPvz && !isValidPvz(rawPvz)) {
+    const officialPvz = getOfficialPvzCode(rawPvz);
+    if (!rawPvz || !isValidPvz(rawPvz) || !officialPvz || officialPvz === '—') {
       soundManager.playErrorSound();
       alert(
         language === 'uz'
-          ? `❌ «${rawPvz}» ro'yxatda mavjud emas! Iltimos, faqat rasmiy ro'yxatdagi PVZ ni tanlang yoki «ИНЦИДЕНТ» / «НЕТ ПВЗ» tugmasini bosing.`
-          : `❌ «${rawPvz}» не существует в списке! Пожалуйста, выберите официальный ПВЗ или нажмите «ИНЦИДЕНТ» / «НЕТ ПВЗ».`
+          ? '❌ PVZ tanlanmagan! Iltimos, ro\'yxatdan PVZ tanlang yoki yuqoridagi «ИНЦИДЕНТ» / «НЕТ ПВЗ» tugmalaridan birini bosing!'
+          : '❌ ПВЗ не выбран! Пожалуйста, выберите официальный ПВЗ из списка или нажмите кнопку «ИНЦИДЕНТ» / «НЕТ ПВЗ»!'
       );
       setPvzError(
         language === 'uz'
-          ? '❌ Ro\'yxatda yo\'q PVZ!'
-          : '❌ ПВЗ не из списка!'
+          ? '❌ PVZ tanlash shart!'
+          : '❌ Обязательно выберите ПВЗ!'
       );
       pvzRef.current?.focus();
       return;
@@ -531,7 +532,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
     try {
       const finalTargetBox = cleanTargetBox;
       const finalBoxNumber = cleanBox;
-      const finalPvz = getOfficialPvzCode(rawPvz) || '—';
+      const finalPvz = officialPvz;
       const updatedItems = items.map((i) => ({
         ...i,
         boxNumber: finalBoxNumber,
@@ -806,7 +807,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
             <div className="h-5 flex items-center justify-between">
               <label className="text-xs font-black uppercase text-slate-300 flex items-center space-x-1.5 whitespace-nowrap">
                 <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span>2. {language === 'uz' ? 'PVZ (Tanlash shart)' : 'ПВЗ (Выбор из списка)'}</span>
+                <span>2. {language === 'uz' ? 'PVZ (Tanlash majburiy *)' : 'ПВЗ (Обязательно *)'}</span>
               </label>
 
               {pvz.trim() && (
