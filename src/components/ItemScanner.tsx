@@ -99,35 +99,32 @@ export const ItemScanner: React.FC<ItemScannerProps> = ({
   }, [activeBox.items.length]);
 
   const submitBarcode = (rawCode: string) => {
-    const code = rawCode.trim();
+    const code = rawCode.trim().replace(/–|—/g, '-');
     if (!code) return;
 
-    if (!/^\d+$/.test(code)) {
-      soundManager.playErrorSound();
-      alert(
-        language === 'uz'
-          ? '❌ Tovar shtrix-kodi faqat raqamlardan iborat boʻlishi shart!'
-          : '❌ Штрих-код товара должен состоять только из цифр!'
-      );
-      setBarcodeInput('');
-      return;
-    }
+    const isStarts10Dash = code.startsWith('10-');
+    const is13Digits = /^\d{13}$/.test(code);
+    const isValidBarcode = (isStarts10Dash && code.length >= 4) || is13Digits;
 
-    const isStarts10 = code.startsWith('10');
-    const is13Digits = code.length === 13;
-    if (!isStarts10 && !is13Digits) {
+    if (!isValidBarcode) {
       soundManager.playErrorSound();
-      if (code.length < 13) {
+      if (code.startsWith('10') && !isStarts10Dash) {
         alert(
           language === 'uz'
-            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta raqam)! Shtrix-kod 13 xonali bo‘lishi yoki 10 bilan boshlanishi shart. Iltimos, to‘g‘ri raqam kiriting!`
-            : `❌ Неверный штрих-код (${code.length} цифр)! Штрих-код должен состоять из 13 цифр или начинаться с 10. Пожалуйста, введите корректный штрих-код!`
+            ? '❌ Noto‘g‘ri shtrix-kod! Shtrix-kod «10-» (chiziqcha bilan) boshlanishi shart!'
+            : '❌ Неверный штрих-код! Штрих-код должен начинаться с «10-» (с дефисом)!'
+        );
+      } else if (!isStarts10Dash && code.length < 13) {
+        alert(
+          language === 'uz'
+            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta belgi)! Shtrix-kod 13 xonali son bo‘lishi yoki «10-» bilan boshlanishi shart. Iltimos, to‘g‘ri raqam kiriting!`
+            : `❌ Неверный штрих-код (${code.length} символов)! Штрих-код должен состоять из 13 цифр или начинаться с «10-». Пожалуйста, введите корректный штрих-код!`
         );
       } else {
         alert(
           language === 'uz'
-            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta raqam)! 10 bilan boshlanmaydigan shtrix-kod faqat 13 xonali bo‘lishi shart. Iltimos, to‘g‘ri raqam kiriting!`
-            : `❌ Неверный штрих-код (${code.length} цифр)! Штрих-код, не начинающийся с 10, должен состоять ровно из 13 цифр. Пожалуйста, введите корректный штрих-код!`
+            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta belgi)! «10-» bilan boshlanmaydigan shtrix-kod faqat 13 xonali sof raqam bo‘lishi shart!`
+            : `❌ Неверный штрих-код (${code.length} символов)! Штрих-код, не начинающийся с «10-», должен состоять ровно из 13 цифр!`
         );
       }
       setBarcodeInput('');
