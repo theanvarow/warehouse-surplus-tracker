@@ -207,6 +207,14 @@ const CITY_DICT: Record<string, { ru: string; uz: string; region: string }> = {
   'ЯНШ': { ru: 'Янгишахар', uz: 'Yangishahar', region: 'regions' },
   'ТХТ': { ru: 'Тахта', uz: 'Taxta', region: 'regions' },
   'МКР': { ru: 'Микрорайон', uz: 'Mikrorayon', region: 'regions' },
+  'ГСТ': { ru: 'Гастелло', uz: 'Gastello', region: 'tashkent' },
+  'ККТ': { ru: 'ККТ', uz: 'KKT', region: 'regions' },
+  'УЧТ': { ru: 'УЧТ', uz: 'UCht', region: 'regions' },
+  'БДН': { ru: 'Бодомзор', uz: 'Bodomazor', region: 'tashkent' },
+  'ТДА': { ru: 'ТДА', uz: 'TDA', region: 'regions' },
+  'ГАБ': { ru: 'ГАБ', uz: 'GAB', region: 'regions' },
+  'БРТ': { ru: 'БРТ', uz: 'BRT', region: 'regions' },
+  'СЛП': { ru: 'СЛП', uz: 'SLP', region: 'regions' },
 };
 
 
