@@ -102,6 +102,38 @@ export const ItemScanner: React.FC<ItemScannerProps> = ({
     const code = rawCode.trim();
     if (!code) return;
 
+    if (!/^\d+$/.test(code)) {
+      soundManager.playErrorSound();
+      alert(
+        language === 'uz'
+          ? '❌ Tovar shtrix-kodi faqat raqamlardan iborat boʻlishi shart!'
+          : '❌ Штрих-код товара должен состоять только из цифр!'
+      );
+      setBarcodeInput('');
+      return;
+    }
+
+    const isStarts10 = code.startsWith('10');
+    const is13Digits = code.length === 13;
+    if (!isStarts10 && !is13Digits) {
+      soundManager.playErrorSound();
+      if (code.length < 13) {
+        alert(
+          language === 'uz'
+            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta raqam)! Shtrix-kod 13 xonali bo‘lishi yoki 10 bilan boshlanishi shart. Iltimos, to‘g‘ri raqam kiriting!`
+            : `❌ Неверный штрих-код (${code.length} цифр)! Штрих-код должен состоять из 13 цифр или начинаться с 10. Пожалуйста, введите корректный штрих-код!`
+        );
+      } else {
+        alert(
+          language === 'uz'
+            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta raqam)! 10 bilan boshlanmaydigan shtrix-kod faqat 13 xonali bo‘lishi shart. Iltimos, to‘g‘ri raqam kiriting!`
+            : `❌ Неверный штрих-код (${code.length} цифр)! Штрих-код, не начинающийся с 10, должен состоять ровно из 13 цифр. Пожалуйста, введите корректный штрих-код!`
+        );
+      }
+      setBarcodeInput('');
+      return;
+    }
+
     const existing = activeBox.items.find((item) => item.barcode === code);
     if (existing) {
       soundManager.playDuplicateSound();

@@ -41,7 +41,7 @@ Skanerlash oynasi operatsiyalarni eng tez va xatosiz bajarish uchun optimallasht
 2. **2. PVZ (Punkt):**  
    Tovar tegishli bo'lgan PVZ kodini yozing yoki qidiring (masalan, `ТАШ-14`).
 3. **3. Tovar Barkodi:**  
-   Lazer skaner bilan tovar barkodini skanerlang. Skanerlanganda ovozli signal chalinadi va sabablar oynasi ochiladi.
+   Lazer skaner bilan tovar barkodini skanerlang. Tizim faqat **13 xonali sonlarni** yoki **10 bilan boshlanadigan raqamlarni** (10 bilan boshlansa cheksiz uzunlikda) qabul qiladi. 13 xonadan kam yoki 10 bilan boshlanmagan noto'g'ri kodlar qat'iyan qabul qilinmaydi. Skanerlanganda ovozli signal chalinadi va sabablar oynasi ochiladi.
 4. **4. Sababni tanlang:**  
    Muammo turiga mos sababni bosing. Tovar pastdagi ro'yxatga qo'shiladi.
 5. **5. Qayta joylangan korup (Куда переложен):**  

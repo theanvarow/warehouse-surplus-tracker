@@ -306,7 +306,7 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       return;
     }
 
-    // Tovar shtrix-kodi faqat raqamlardan iborat bo'lishi shart
+    // Tovar shtrix-kodi validatsiyasi: Faqat raqamlar, 13 xonali son yoki 10 bilan boshlanadigan raqam (10 bilan boshlansa cheksiz)
     if (!/^\d+$/.test(code)) {
       soundManager.playErrorSound();
       alert(
@@ -314,6 +314,28 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
           ? '❌ Tovar shtrix-kodi faqat raqamlardan iborat boʻlishi shart!'
           : '❌ Штрих-код товара должен состоять только из цифр!'
       );
+      setBarcodeInput('');
+      barcodeRef.current?.focus();
+      return;
+    }
+
+    const isStarts10 = code.startsWith('10');
+    const is13Digits = code.length === 13;
+    if (!isStarts10 && !is13Digits) {
+      soundManager.playErrorSound();
+      if (code.length < 13) {
+        alert(
+          language === 'uz'
+            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta raqam)! Shtrix-kod 13 xonali bo‘lishi yoki 10 bilan boshlanishi shart. Iltimos, to‘g‘ri raqam kiriting!`
+            : `❌ Неверный штрих-код (${code.length} цифр)! Штрих-код должен состоять из 13 цифр или начинаться с 10. Пожалуйста, введите корректный штрих-код!`
+        );
+      } else {
+        alert(
+          language === 'uz'
+            ? `❌ Noto‘g‘ri shtrix-kod (${code.length} ta raqam)! 10 bilan boshlanmaydigan shtrix-kod faqat 13 xonali bo‘lishi shart. Iltimos, to‘g‘ri raqam kiriting!`
+            : `❌ Неверный штрих-код (${code.length} цифр)! Штрих-код, не начинающийся с 10, должен состоять ровно из 13 цифр. Пожалуйста, введите корректный штрих-код!`
+        );
+      }
       setBarcodeInput('');
       barcodeRef.current?.focus();
       return;
@@ -421,6 +443,29 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
       );
       return;
     }
+
+    const isStarts10 = clean.startsWith('10');
+    const is13Digits = clean.length === 13;
+    if (!isStarts10 && !is13Digits) {
+      soundManager.playErrorSound();
+      if (clean.length < 13) {
+        alert(
+          language === 'uz'
+            ? `❌ Noto‘g‘ri shtrix-kod (${clean.length} ta raqam)! Shtrix-kod 13 xonali bo‘lishi yoki 10 bilan boshlanishi shart. Iltimos, to‘g‘ri raqam kiriting!`
+            : `❌ Неверный штрих-код (${clean.length} цифр)! Штрих-код должен состоять из 13 цифр или начинаться с 10. Пожалуйста, введите корректный штрих-код!`
+        );
+      } else {
+        alert(
+          language === 'uz'
+            ? `❌ Noto‘g‘ri shtrix-kod (${clean.length} ta raqam)! 10 bilan boshlanmaydigan shtrix-kod faqat 13 xonali bo‘lishi shart. Iltimos, to‘g‘ri raqam kiriting!`
+            : `❌ Неверный штрих-код (${clean.length} цифр)! Штрих-код, не начинающийся с 10, должен состоять ровно из 13 цифр. Пожалуйста, введите корректный штрих-код!`
+        );
+      }
+      setBarcodeInput('');
+      barcodeRef.current?.focus();
+      return;
+    }
+
     addItemToCurrentBox(clean);
   };
 
@@ -971,11 +1016,15 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
               </label>
               {barcodeInput && (
                 <span className={`text-xs font-bold shrink-0 text-right whitespace-nowrap ${
-                  /^\d+$/.test(barcodeInput) ? 'text-emerald-400' : 'text-rose-400'
+                  (barcodeInput.startsWith('10') || barcodeInput.length === 13) ? 'text-emerald-400' : 'text-rose-400'
                 }`}>
-                  {/^\d+$/.test(barcodeInput)
-                    ? (language === 'uz' ? '✅ Faqat raqam' : '✅ Только цифры')
-                    : (language === 'uz' ? '❌ Faqat raqam!' : '❌ Только цифры!')}
+                  {barcodeInput.startsWith('10')
+                    ? (language === 'uz' ? `✅ 10-... (${barcodeInput.length} ta)` : `✅ 10-... (${barcodeInput.length} цифр)`)
+                    : barcodeInput.length === 13
+                    ? (language === 'uz' ? '✅ 13 xonali kod' : '✅ 13-значный код')
+                    : barcodeInput.length < 13
+                    ? (language === 'uz' ? `❌ 13 xona yoki 10- (${barcodeInput.length}/13)` : `❌ 13 цифр или 10- (${barcodeInput.length}/13)`)
+                    : (language === 'uz' ? '❌ Faqat 13 xona yoki 10-' : '❌ Только 13 цифр или 10-')}
                 </span>
               )}
             </div>
@@ -988,11 +1037,11 @@ export const UnifiedScanner: React.FC<UnifiedScannerProps> = ({
                 pattern="[0-9]*"
                 value={barcodeInput}
                 onChange={(e) => setBarcodeInput(e.target.value.replace(/\D/g, ''))}
-                placeholder={language === 'uz' ? 'Faqat raqam (skanerlang)...' : 'Только цифры (сканируйте)...'}
+                placeholder={language === 'uz' ? '13 xonali yoki 10- bilan boshlanuvchi kod...' : '13 цифр или начинающийся с 10...'}
                 className={`w-full pl-4 pr-24 py-3.5 bg-[#191b26] border rounded-xl text-white placeholder-slate-500 font-mono text-sm sm:text-base font-black focus:outline-none focus:ring-2 transition-all ${
-                  barcodeInput && !/^\d+$/.test(barcodeInput)
+                  barcodeInput && !(barcodeInput.startsWith('10') || barcodeInput.length === 13)
                     ? 'border-rose-500 focus:border-rose-400 focus:ring-rose-500/30'
-                    : barcodeInput && /^\d+$/.test(barcodeInput)
+                    : barcodeInput && (barcodeInput.startsWith('10') || barcodeInput.length === 13)
                     ? 'border-emerald-500 focus:border-emerald-400 focus:ring-emerald-500/30'
                     : 'border-[#2e3347] focus:border-indigo-500 focus:ring-indigo-500/20'
                 }`}
