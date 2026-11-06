@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Server In-Memory Keshi (Trafikni tejash uchun 120 soniya)
+// Server In-Memory Keshi (Trafikni tejash va tezkor javob uchun 60 soniya)
 let cachedSheetItems: any[] | null = null;
 let lastCacheTime = 0;
-const CACHE_TTL_MS = 120000; // 120 soniya (2 daqiqa) server keshi
+const CACHE_TTL_MS = 60000; // 60 soniya (1 daqiqa) server keshi
 
 export async function POST(req: NextRequest) {
   try {
@@ -137,9 +137,10 @@ export async function GET(req: NextRequest) {
   // To'g'ridan-to'g'ri Google Sheets jadvalidan o'qish (In-memory Server Keshi bilan)
   if (action === 'fetch_sheet_items') {
     try {
+      const forceRefresh = searchParams.get('force') === '1' || searchParams.get('force') === 'true';
       const now = Date.now();
-      // Agar kesh mavjud bo'lsa va 120 soniyadan eski bo'lmasa, Google ga bormasdan keshdan qaytaramiz (50 ta xodim bir vaqtda so'rov berganda)
-      if (cachedSheetItems && now - lastCacheTime < CACHE_TTL_MS) {
+      // Agar kesh mavjud bo'lsa va 60 soniyadan eski bo'lmasa, Google ga bormasdan keshdan qaytaramiz
+      if (!forceRefresh && cachedSheetItems && now - lastCacheTime < CACHE_TTL_MS) {
         return NextResponse.json(
           {
             success: true,
@@ -149,7 +150,7 @@ export async function GET(req: NextRequest) {
           },
           {
             headers: {
-              'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
+              'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=180',
             }
           }
         );
@@ -171,7 +172,7 @@ export async function GET(req: NextRequest) {
             },
             {
               headers: {
-                'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
+                'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=180',
               }
             }
           );
@@ -211,10 +212,12 @@ export async function GET(req: NextRequest) {
         return result;
       };
 
+      // Server CPU va xotirasini tejash uchun eng oxirgi 25 000 qatorni olamiz (~7-10 kunlik to'liq kunlik ma'lumotlar)
+      const targetLines = lines.length > 25000 ? lines.slice(-25000) : lines.slice(1);
       const parsedItems = [];
-      // 1-qator header bo'lgani uchun 1 dan boshlaymiz
-      for (let i = 1; i < lines.length; i++) {
-        const cols = parseCsvLine(lines[i]);
+
+      for (let i = 0; i < targetLines.length; i++) {
+        const cols = parseCsvLine(targetLines[i]);
         // Agar № yoki shtrix-kod bo'lmasa o'tkazib yuboramiz
         if (!cols[0] && !cols[5]) continue;
 
@@ -254,20 +257,18 @@ export async function GET(req: NextRequest) {
       parsedItems.reverse();
 
       // Keshga saqlaymiz (keyingi xodimlar bir zumda olishi uchun)
-      // Trafikni 98% ga kamaytirish uchun faqat oxirgi 150 ta eng yangi tovarlarni qaytaramiz
-      const recentItems = parsedItems.slice(0, 150);
-      cachedSheetItems = recentItems;
+      cachedSheetItems = parsedItems;
       lastCacheTime = Date.now();
 
       return NextResponse.json(
         {
           success: true,
-          total: recentItems.length,
-          items: recentItems
+          total: parsedItems.length,
+          items: parsedItems
         },
         {
           headers: {
-            'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
+            'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=180',
           }
         }
       );

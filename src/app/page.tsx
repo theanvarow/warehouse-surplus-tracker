@@ -52,16 +52,21 @@ export default function Home() {
   }, [userSession]);
 
   // Fetch latest items directly from Google Sheets
-  const refreshFromGoogleSheets = async () => {
+  const refreshFromGoogleSheets = async (force: boolean = false) => {
     try {
-      const res = await fetch('/api/sync?action=fetch_sheet_items');
+      const url = force ? '/api/sync?action=fetch_sheet_items&force=1' : '/api/sync?action=fetch_sheet_items';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.items) && data.items.length > 0) {
           setAllItems(data.items);
-          // LocalStorage keshini ham Google Sheets bilan yangilab qo'yamiz
+          // LocalStorage keshini ham Google Sheets bilan yangilab qo'yamiz (xavfsiz limit bilan)
           if (typeof window !== 'undefined') {
-            localStorage.setItem('vp_all_scanned_items', JSON.stringify(data.items));
+            try {
+              localStorage.setItem('vp_all_scanned_items', JSON.stringify(data.items.slice(0, 3000)));
+            } catch (storageErr) {
+              console.warn('LocalStorage limit reached, storing in memory only:', storageErr);
+            }
           }
         }
       }

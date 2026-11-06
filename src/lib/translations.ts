@@ -8,7 +8,7 @@ export const translations = {
     warehouse: 'Omborxona',
     problemDept: 'Muammoli otdel',
     scannerMode: 'Skanerlash',
-    dashboard: 'Monitoring',
+    dashboard: 'Statistika',
     settings: 'Sozlamalar',
     
     // Auth (Scanner only)
@@ -159,7 +159,7 @@ export const translations = {
     warehouse: 'Склад',
     problemDept: 'Проблемный отдел',
     scannerMode: 'Сканирование',
-    dashboard: 'Мониторинг',
+    dashboard: 'Статистика',
     settings: 'Настройки',
     
     // Auth (Scanner only)
