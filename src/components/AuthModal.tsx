@@ -14,8 +14,7 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertTriangle,
-  Lock,
-  Keyboard
+  Lock
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -135,12 +134,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   const [tableNumber, setTableNumber] = useState('');
   const [isNameScanned, setIsNameScanned] = useState(false);
   const [isTableScanned, setIsTableScanned] = useState(false);
-  const [isManualMode, setIsManualMode] = useState(false);
-  const isManualModeRef = useRef<boolean>(false);
-
-  useEffect(() => {
-    isManualModeRef.current = isManualMode;
-  }, [isManualMode]);
 
   // Shift state: starts null or saved shift, but NEVER auto-logins until user confirms
   const [selectedShift, setSelectedShift] = useState<ShiftId | null>(() => {
@@ -275,6 +268,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
       const cleanTbl = tblNum.trim();
       if (!cleanEmp || cleanEmp.length < 2) return;
       if (!cleanTbl || cleanTbl.length < 1) return;
+      if (!isNameScanned || !isTableScanned) return;
 
       setIsLoggingIn(true);
       soundManager.playBoxScanSound();
@@ -289,25 +283,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         });
       }, 350);
     },
-    [onLogin]
+    [isNameScanned, isTableScanned, onLogin]
   );
-
-  // Skanersiz 1-klikda tezkor tizimga kirish (Dasturni ochish)
-  const handleQuickLogin = (defaultShift: ShiftId = '1') => {
-    setIsLoggingIn(true);
-    soundManager.playBoxScanSound();
-    const shift = selectedShift || defaultShift;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('vp_last_shift', shift);
-    }
-    setTimeout(() => {
-      onLogin({
-        employeeName: 'Sirojiddin Anvarov',
-        tableNumber: 'T-FF_RETURN_1',
-        shift: shift,
-      });
-    }, 250);
-  };
 
   // Sanitize scanned text with automatic Russian keyboard layout recovery
   const sanitizeScannedString = (raw: string): string => {
@@ -590,11 +567,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
   // 100% barcha skan signallarini tutib oladi va to'g'ri maydonga kiritadi.
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Qo'lda kiritish (Manual rejim) yoqilgan bo'lsa, global skaner tutuvchini chetlab o'tamiz
-      if (isManualModeRef.current) {
-        return;
-      }
-
       // 0. LOCKOUT ACTIVE: Blok holatida barcha klaviatura signallari to'liq yo'qotiladi!
       if (isLockedOutRef.current || lockoutRemaining > 0) {
         e.preventDefault();
@@ -833,116 +805,52 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResetBadge}
-                  className="text-[11px] font-bold text-slate-400 hover:text-white bg-[#25283a] px-2.5 py-1 rounded-md border border-[#2e3347] transition-all cursor-pointer"
-                >
-                  {language === 'uz' ? 'O\'zgartirish' : 'Изменить'}
-                </button>
+                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20 shrink-0 ml-2">
+                  ✓ {t.scannedSuccess}
+                </span>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="relative group">
-                  <input
-                    ref={nameRef}
-                    type="text"
-                    value={name}
-                    disabled={!isManualMode && lockoutRemaining > 0}
-                    readOnly={!isManualMode}
-                    onChange={
-                      isManualMode
-                        ? (e) => {
-                            setName(e.target.value);
-                            setError('');
-                          }
-                        : (e) => e.preventDefault()
-                    }
-                    onKeyDown={
-                      isManualMode
-                        ? (e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (name.trim().length >= 2) {
-                                setIsNameScanned(true);
-                                soundManager.playItemScanSound();
-                                setTimeout(() => tableRef.current?.focus(), 80);
-                              }
-                            }
-                          }
-                        : (e) => e.preventDefault()
-                    }
-                    onPaste={
-                      isManualMode
-                        ? undefined
-                        : (e) => {
-                            e.preventDefault();
-                            triggerManualLockout();
-                          }
-                    }
-                    onDrop={
-                      isManualMode
-                        ? undefined
-                        : (e) => {
-                            e.preventDefault();
-                            triggerManualLockout();
-                          }
-                    }
-                    onContextMenu={isManualMode ? undefined : (e) => e.preventDefault()}
-                    placeholder={
-                      isManualMode
-                        ? language === 'uz'
-                          ? 'Xodim FIO (masalan: Sirojiddin Anvarov)...'
-                          : 'ФИО сотрудника (напр: Sirojiddin Anvarov)...'
-                        : lockoutRemaining > 0
-                        ? language === 'uz'
-                          ? `🔒 Bloklangan (${lockoutRemaining}s)...`
-                          : `🔒 Заблокировано (${lockoutRemaining}с)...`
-                        : t.scanBadgePlaceholder
-                    }
-                    className={`w-full pl-11 pr-4 py-3 rounded-xl text-white text-sm font-medium focus:outline-none transition-all shadow-inner ${
-                      isManualMode
-                        ? 'bg-[#161824] border border-indigo-500/80 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30'
-                        : lockoutRemaining > 0
-                        ? 'bg-rose-950/20 border border-rose-500/80 text-rose-300 placeholder-rose-400 cursor-not-allowed ring-2 ring-rose-500/20 select-none'
-                        : 'bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-slate-400 select-none'
-                    }`}
-                    autoComplete="off"
-                    spellCheck={false}
-                    autoFocus
-                  />
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    {lockoutRemaining > 0 ? (
-                      <Lock className="w-5 h-5 text-rose-400 animate-pulse" />
-                    ) : (
-                      <QrCode className="w-5 h-5 text-indigo-400 animate-pulse" />
-                    )}
-                  </div>
+              <div className="relative group">
+                <input
+                  ref={nameRef}
+                  type="text"
+                  value=""
+                  disabled={lockoutRemaining > 0}
+                  readOnly={false}
+                  onChange={(e) => e.preventDefault()}
+                  onKeyDown={(e) => e.preventDefault()}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    triggerManualLockout();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    triggerManualLockout();
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  placeholder={
+                    lockoutRemaining > 0
+                      ? language === 'uz'
+                        ? `🔒 Bloklangan (${lockoutRemaining}s)...`
+                        : `🔒 Заблокировано (${lockoutRemaining}с)...`
+                      : t.scanBadgePlaceholder
+                  }
+                  className={`w-full pl-11 pr-4 py-3 rounded-xl text-white text-sm font-medium focus:outline-none transition-all shadow-inner cursor-default select-none ${
+                    lockoutRemaining > 0
+                      ? 'bg-rose-950/20 border border-rose-500/80 text-rose-300 placeholder-rose-400 cursor-not-allowed ring-2 ring-rose-500/20'
+                      : 'bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-slate-400'
+                  }`}
+                  autoComplete="off"
+                  spellCheck={false}
+                  autoFocus
+                />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  {lockoutRemaining > 0 ? (
+                    <Lock className="w-5 h-5 text-rose-400 animate-pulse" />
+                  ) : (
+                    <QrCode className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  )}
                 </div>
-
-                {isManualMode && (
-                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                    <span className="text-[11px] text-slate-400 font-bold">
-                      {language === 'uz' ? 'Tezkor tanlash:' : 'Быстрый выбор:'}
-                    </span>
-                    {['Sirojiddin Anvarov', 'Test Operator', 'Sardor'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => {
-                          setName(preset);
-                          setIsNameScanned(true);
-                          setError('');
-                          soundManager.playItemScanSound();
-                          setTimeout(() => tableRef.current?.focus(), 80);
-                        }}
-                        className="px-2.5 py-1 bg-[#25283a] hover:bg-indigo-600 hover:text-white border border-[#2e3347] rounded-lg text-xs font-bold text-slate-300 transition-all cursor-pointer"
-                      >
-                        + {preset}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -993,118 +901,55 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResetTable}
-                  className="text-[11px] font-bold text-slate-400 hover:text-white bg-[#25283a] px-2.5 py-1 rounded-md border border-[#2e3347] transition-all cursor-pointer"
-                >
-                  {language === 'uz' ? 'O\'zgartirish' : 'Изменить'}
-                </button>
+                <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20 shrink-0 ml-2">
+                  ✓ {t.scannedSuccess}
+                </span>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="relative group">
-                  <input
-                    ref={tableRef}
-                    type="text"
-                    value={tableNumber}
-                    disabled={!isManualMode && (!isNameScanned || lockoutRemaining > 0)}
-                    readOnly={!isManualMode}
-                    onChange={
-                      isManualMode
-                        ? (e) => {
-                            setTableNumber(e.target.value);
-                            setError('');
-                          }
-                        : (e) => e.preventDefault()
-                    }
-                    onKeyDown={
-                      isManualMode
-                        ? (e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (tableNumber.trim().length >= 1) {
-                                setIsTableScanned(true);
-                                soundManager.playItemScanSound();
-                              }
-                            }
-                          }
-                        : (e) => e.preventDefault()
-                    }
-                    onPaste={
-                      isManualMode
-                        ? undefined
-                        : (e) => {
-                            e.preventDefault();
-                            triggerManualLockout();
-                          }
-                    }
-                    onDrop={
-                      isManualMode
-                        ? undefined
-                        : (e) => {
-                            e.preventDefault();
-                            triggerManualLockout();
-                          }
-                    }
-                    onContextMenu={isManualMode ? undefined : (e) => e.preventDefault()}
-                    placeholder={
-                      isManualMode
-                        ? language === 'uz'
-                          ? 'Stol raqami (masalan: T-FF_RETURN_1)...'
-                          : 'Номер стола (напр: T-FF_RETURN_1)...'
-                        : lockoutRemaining > 0
-                        ? language === 'uz'
-                          ? `🔒 Bloklangan (${lockoutRemaining}s)...`
-                          : `🔒 Заблокировано (${lockoutRemaining}с)...`
-                        : isNameScanned
-                        ? t.scanTablePlaceholder
-                        : language === 'uz'
-                        ? 'Avval xodimni skanerlang...'
-                        : 'Сначала сканируйте сотрудника...'
-                    }
-                    className={`w-full pl-11 pr-4 py-3 rounded-xl text-white text-sm font-medium focus:outline-none transition-all shadow-inner ${
-                      isManualMode
-                        ? 'bg-[#161824] border border-indigo-500/80 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30'
-                        : lockoutRemaining > 0
-                        ? 'bg-rose-950/20 border border-rose-500/80 text-rose-300 placeholder-rose-400 cursor-not-allowed ring-2 ring-rose-500/20 select-none'
-                        : 'bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-slate-400 select-none'
-                    }`}
-                    autoComplete="off"
-                    spellCheck={false}
-                  />
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    {lockoutRemaining > 0 ? (
-                      <Lock className="w-5 h-5 text-rose-400 animate-pulse" />
-                    ) : (
-                      <Barcode className="w-5 h-5 text-indigo-400" />
-                    )}
-                  </div>
+              <div className="relative group">
+                <input
+                  ref={tableRef}
+                  type="text"
+                  value=""
+                  disabled={!isNameScanned || lockoutRemaining > 0}
+                  readOnly={false}
+                  onChange={(e) => e.preventDefault()}
+                  onKeyDown={(e) => e.preventDefault()}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    triggerManualLockout();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    triggerManualLockout();
+                  }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  placeholder={
+                    lockoutRemaining > 0
+                      ? language === 'uz'
+                        ? `🔒 Bloklangan (${lockoutRemaining}s)...`
+                        : `🔒 Заблокировано (${lockoutRemaining}с)...`
+                      : isNameScanned
+                      ? t.scanTablePlaceholder
+                      : language === 'uz'
+                      ? 'Avval xodimni skanerlang...'
+                      : 'Сначала сканируйте сотрудника...'
+                  }
+                  className={`w-full pl-11 pr-4 py-3 rounded-xl text-white text-sm font-medium focus:outline-none transition-all shadow-inner cursor-default select-none disabled:opacity-40 disabled:cursor-not-allowed ${
+                    lockoutRemaining > 0
+                      ? 'bg-rose-950/20 border border-rose-500/80 text-rose-300 placeholder-rose-400 cursor-not-allowed ring-2 ring-rose-500/20'
+                      : 'bg-[#191b26] border border-[#2e3347] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 placeholder-slate-400'
+                  }`}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  {lockoutRemaining > 0 ? (
+                    <Lock className="w-5 h-5 text-rose-400 animate-pulse" />
+                  ) : (
+                    <Barcode className="w-5 h-5 text-indigo-400" />
+                  )}
                 </div>
-
-                {/* Manual mode quick chips for table */}
-                {isManualMode && (
-                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                    <span className="text-[11px] text-slate-400 font-bold">
-                      {language === 'uz' ? 'Stolni tanlash:' : 'Выбор стола:'}
-                    </span>
-                    {['T-FF_RETURN_1', 'T-FF_RETURN_2', 'T-FF_RETURN_3', '100'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => {
-                          setTableNumber(preset);
-                          setIsTableScanned(true);
-                          setError('');
-                          soundManager.playItemScanSound();
-                        }}
-                        className="px-2.5 py-1 bg-[#25283a] hover:bg-indigo-600 hover:text-white border border-[#2e3347] rounded-lg text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
-                      >
-                        + {preset}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -1162,22 +1007,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
         </div>
 
         {/* Action Button: Explicit Confirmation via Login button */}
-        <div className="mt-6 pt-3 border-t border-[#2e3347]/80 space-y-3">
+        <div className="mt-6 pt-3 border-t border-[#2e3347]/80">
           {isLoggingIn ? (
             <div className="w-full py-4 px-6 bg-emerald-600 text-white font-extrabold text-base rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
               <Sparkles className="w-5 h-5 animate-spin" />
               <span>{t.autoLoggingIn}</span>
             </div>
-          ) : (isNameScanned && isTableScanned) || (isManualMode && name.trim().length >= 2 && tableNumber.trim().length >= 1) ? (
+          ) : isNameScanned && isTableScanned ? (
             <button
               type="button"
-              disabled={isLoggingIn}
+              disabled={isLoggingIn || !name || !tableNumber || name.trim().length < 2 || tableNumber.trim().length < 1}
               onClick={() => {
                 if (isLoggingIn) return;
-                const shift = selectedShift || '1';
-                performLogin(name, tableNumber, shift);
+                if (!isNameScanned || !isTableScanned) return;
+                if (!name || name.trim().length < 2) return;
+                if (!tableNumber || tableNumber.trim().length < 1) return;
+                if (!selectedShift) {
+                  setError(
+                    language === 'uz'
+                      ? 'Iltimos, avval ish smenasini tanlang!'
+                      : 'Пожалуйста, сначала выберите смену!'
+                  );
+                  soundManager.playErrorSound();
+                  return;
+                }
+                performLogin(name, tableNumber, selectedShift);
               }}
-              className="w-full py-4 px-6 font-extrabold text-base rounded-2xl shadow-lg flex items-center justify-center space-x-2 transition-all cursor-pointer group bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white shadow-indigo-600/30 scale-[1.01]"
+              className={`w-full py-4 px-6 font-extrabold text-base rounded-2xl shadow-lg flex items-center justify-center space-x-2 transition-all cursor-pointer group ${
+                selectedShift
+                  ? 'bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white shadow-indigo-600/30 scale-[1.01]'
+                  : 'bg-indigo-600/70 hover:bg-indigo-600 text-white shadow-indigo-600/20'
+              }`}
             >
               <span>
                 {selectedShift
@@ -1185,62 +1045,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ language, onLogin, onLangu
                     ? `${selectedShift}-Smena bilan tizimga kirish`
                     : `Войти в систему (${selectedShift}-я Смена)`
                   : language === 'uz'
-                  ? '1-Smena bilan tizimga kirish'
-                  : 'Войти с 1-й сменой'}
+                  ? 'Smenani tanlang va kiring'
+                  : 'Выберите смену для входа'}
               </span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           ) : (
-            <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#191b26] border border-[#2e3347] text-slate-400 text-xs font-semibold text-center">
+            <div className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-[#191b26] border border-[#2e3347] text-slate-400 text-xs font-semibold text-center">
               <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />
               <span>
-                {!isNameScanned && (!isManualMode || name.trim().length < 2)
+                {!isNameScanned
                   ? language === 'uz'
-                    ? '1-qadam: Xodim beydjini skanerlang yoki ismini kiriting'
-                    : 'Шаг 1: Отсканируйте бейдж или введите имя'
+                    ? '1-qadam: Xodim beydjidagi QR kodni skanerlang'
+                    : 'Шаг 1: Отсканируйте QR-код бейджа'
                   : language === 'uz'
-                  ? '2-qadam: Ish stoli shtrix-kodini skanerlang yoki kiriting'
-                  : 'Шаг 2: Отсканируйте или укажите стол'}
+                  ? '2-qadam: Ish stoli shtrix-kodini skanerlang'
+                  : 'Шаг 2: Отсканируйте штрих-код стола'}
               </span>
             </div>
           )}
-
-          {/* Skanersiz 1-klikda tezkor kirish tugmasi */}
-          <button
-            type="button"
-            onClick={() => handleQuickLogin()}
-            className="w-full py-3 px-4 bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-emerald-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 border border-emerald-500/40 rounded-2xl text-emerald-300 hover:text-white text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98 shadow-sm"
-          >
-            <span>⚡ {language === 'uz' ? 'Skanersiz 1-klikda tezkor kirish (Dasturni ochish)' : 'Вход в 1 клик без сканера (Открыть программу)'}</span>
-          </button>
-
-          {/* Skaner rejimi va Qo'lda kiritish rejimi almashtirgichi */}
-          <div className="flex items-center justify-center pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                const next = !isManualMode;
-                setIsManualMode(next);
-                setError('');
-                soundManager.playItemScanSound();
-                if (next) {
-                  setTimeout(() => nameRef.current?.focus(), 80);
-                }
-              }}
-              className="text-xs text-slate-400 hover:text-indigo-300 underline font-semibold transition-colors cursor-pointer py-0.5 flex items-center gap-1.5"
-            >
-              <Keyboard className="w-3.5 h-3.5" />
-              <span>
-                {isManualMode
-                  ? language === 'uz'
-                    ? '📷 Skaner rejimiga qaytish'
-                    : '📷 Вернуться в режим сканера'
-                  : language === 'uz'
-                  ? '⌨️ Skaner yo\'qmi? Qo\'lda kiritish rejimiga o\'tish'
-                  : '⌨️ Нет сканера? Переключить на ручной ввод'}
-              </span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
